@@ -3,135 +3,156 @@
 ## One source for ChatGPT and Codex
 
 Use **https://github.com/spencer-life/codex-astra-luna-orchestrator/tree/personal**.
-Always specify the `personal` branch when asking either assistant to inspect or
-change the setup. A GitHub connection does not imply that the default branch is
-`personal`, nor that a cached view includes the latest commit. Give the assistant
-the branch link and, for a review, the commit SHA.
+Specify the branch and, for a precise review, the commit. A connection or cached
+view does not prove the latest source was inspected. Installed files are applied
+copies, not a competing source. Read `AGENTS.md` before repository changes.
 
-The files to maintain are:
+Maintain:
 
-- `orchestrator/config.toml`: root model/effort and only the five owned `[agents]` settings.
-- `orchestrator/agents/*.toml`: the seven named roles, including the unchanged research verifier.
-- `orchestrator/skills/astra-orchestrator/SKILL.md`: the literal installed skill source.
-- `scripts/orchestrator_sync.py`, `mise.toml`, and its tests: the guarded apply workflow.
+- `orchestrator/config.toml`: root selection and only the five owned agent settings.
+- `orchestrator/agents/*.toml`: seven explicitly configured coding/research roles.
+- `orchestrator/skills/astra-orchestrator/SKILL.md`: the compact routing skill.
+- Its `references/maintenance.md` and `references/semble.md`: on-demand guidance.
+- `scripts/orchestrator_sync.py`, `mise.toml`, and tests: guarded maintenance.
+- `scripts/token_usage.py` and `PERFORMANCE.md`: read-only metrics and limitations.
 
-Do not edit the installed copies as the normal update path. Do not regenerate the
-skill from instructions. Do not copy the entire installed config into the repo.
-Do not copy credentials, permissions, providers, MCP servers, apps/plugins,
-project paths, sessions, or logs into this public fork. Backups and installation
-receipts stay outside the checkout and are never committed.
+Do not publish full installed config, credentials, permissions, providers, MCP
+servers, apps/plugins, private paths, sessions, logs, receipts, or backups. Do not
+regenerate the skill from a prompt or edit installed files as the normal update path.
 
-## Defaults preserved by this import
+## Defaults and routing
 
-The root and reviewer use Astra at Low. Explorer, worker, tester, and generic
-subagent fallback use Luna at High. Researcher and Semble search use Luna at
-Medium. The agent settings keep three concurrent subagents and `max_depth = 1`;
-the skill also prohibits nested delegation unless explicitly authorized.
-Research verifier remains Sol at High, read-only, with its original instructions.
-Existing explicit session choices are respected; these files do not prove the
-settings already loaded into a running session.
+Astra Low remains root and reviewer. Luna Medium handles bounded exploration,
+research, and Semble discovery. Luna High handles bounded implementation, independent
+testing, and generic fallback. The new Sol Medium `solver` handles demanding bounded
+implementation or investigation. Worker and solver are alternatives, not stages.
+Astra can execute difficult cohesive work directly; Luna need not fail first.
 
-The initial source import was taken from the working installed configuration.
-It changes no model, effort, sandbox, service tier, or delegation setting.
-The skill adds the repository-first workflow and uses portable home paths.
-The Semble role only replaces its absolute launcher path with `~/.local/bin/semble`.
-Other role files, including the research verifier, are copied byte for byte.
+Keep three open subagents at most and flat delegation unless explicitly authorized.
+The existing `max_depth = 1` value is preserved, not treated as proof that a specific
+Codex build enforces it. Preserve explicit session choices, approvals, service tiers,
+and existing sandbox settings. Semble's sandbox remains inherited; its assignment is read-only. The obsolete
+`research_verifier` role is retired by this migration and is no longer maintained.
+
+These are configured defaults, not proof of a running session's effective selections.
+Read `PERFORMANCE.md` for the reasoning and measurement limits, not on every coding task.
 
 ## Review, commit, and apply
 
-Prerequisites: Git, mise, and uv. Review this repository's mise configuration
-before trusting it. In your local checkout of `personal`:
+Prerequisites are Git, mise, and uv. Review `mise.toml` before trusting it. In the
+maintained local `personal` checkout:
 
 ```sh
-# Run once after reviewing mise.toml:
 mise trust
-
-# If approved changes were made on GitHub or another machine:
 mise run orchestrator:sync
-
-# Inspect the actual source changes, then validate and test:
 mise run orchestrator:validate
 mise run orchestrator:test
 mise run orchestrator:plan
-
-# When you made local edits, commit only the reviewed paths first:
-# git add <reviewed paths>
-# git commit -m "fix(orchestrator): describe the approved change"
-
-# Apply only the clean, committed personal checkout:
+# Review and commit local edits before applying them.
 mise run orchestrator:apply
 mise run orchestrator:status
-
-# Publish approved local commits (never force-push):
+# Publish approved local commits without force-pushing:
 git push origin personal
 ```
 
-The exact future apply command is **`mise run orchestrator:apply`** from the
-`personal` checkout. `mise run orchestrator:sync` fast-forwards only from the fork’s `personal`
-branch; syncing and applying are separate, explicit steps. Nothing fetches or
-installs original-project updates automatically. A dirty checkout or
-an unexpected change to an owned installed file blocks apply. Review and preserve
-that work rather than resetting or forcing through it.
+`sync` fast-forwards only from this fork's `personal` branch. It does not install
+anything or merge an unmerged PR. For remote candidates, review and test their
+branch first. Merge approved changes into `personal`, then sync, validate/test/plan,
+and apply the clean committed result. Reuse valid test evidence when code and the
+relevant environment did not change. A plan needs the maintained checkout identity;
+do not bypass the `personal` branch guard to install a PR branch.
 
-Initial adoption of an existing installation uses an explicitly prepared
-private baseline of the existing installed files. It must match immediately before applying. This is a
-one-time adoption step; routine updates use the recorded installation state.
-The workflow does not offer a force-overwrite option. All nine destination
-files must already exist; this is a maintenance workflow, not a blank-machine
-installer.
+The source validator uses the documented model/effort matrix checked 2026-09-20;
+it is not a live availability test. Before installing new selections, also inspect
+your current Codex model catalog and configuration precedence. An optional read-only
+check consumes an explicitly chosen local JSON catalog:
 
-## What apply owns
+```sh
+mise run orchestrator:compatibility --model-catalog /path/to/current-model-catalog.json
+```
 
-Apply copies the seven role files and the skill directly from `orchestrator/`.
-It merges only the allowlisted config keys while preserving unrelated TOML
-settings and comments. It does not replace the whole config or remove unrelated
-roles/skills. In particular, existing `agents.interrupt_message`, permissions,
-MCP/app configuration, and other machine settings remain local and unchanged.
+Replace the path locally. The supported input has a `models` array, with each model's
+`slug` and `supported_reasoning_levels` objects containing `effort`. Unknown schemas,
+missing models, or unsupported efforts fail closed. Refresh or obtain the catalog
+using the installed Codex version's documented controls; do not fabricate entries.
+A stale catalog, an advertised model, or valid TOML does not prove account access or
+actual selection. Check project/profile overrides and effective role/effort in a new
+session; do not silently substitute models on failure.
 
-Before writing, apply validates the source and checks the recorded owned-file
-hashes and config values. Changes to unrelated config keys are allowed. It backs
-up all affected installed files and the prior receipt, writes replacements, and
-records the source commit and content hashes. Concurrent applies are locked out;
-failures during writing trigger restoration from the captured pre-apply data.
-Individual replacements are atomic; a process kill or machine failure across
-multiple files can still require recovery from the backup.
+## One-time managed-file migration
 
-Installation state is kept at `~/.local/state/astra-orchestrator/state.json`.
-Backups live under `~/.local/state/astra-orchestrator/backups/`; the apply
-output gives the exact directory. Its `manifest.json` maps each installed path
-to a backup file and records its original mode. Treat backups as private:
-the config backup includes unrelated settings that must not be uploaded.
-Do not publish the receipt or private baseline merely to prove installation.
+The maintained source now contains **11 files**: one config fragment, seven roles,
+one skill, and two references. Apply recognizes the original **version-1 receipt
+for nine files** and migrates it to version 2 without a new bootstrap or deleting
+state. The only new destinations allowed in that migration are:
 
-If drift blocks apply, compare the local file with its maintained source and the
-last installed commit. Preserve the local copy. Bring approved edits into the
-repository, then explicitly reconcile the installed copy with the last recorded
-state before retrying. Do not simply delete the receipt to bypass drift checks.
-For rollback, preserve any newer local changes first and restore the affected
-files **and matching receipt** from the same pre-apply backup. Do not mix backups
-from different applies. Plan/status will detect a mismatched state.
+- `~/.codex/agents/solver.toml`
+- `~/.agents/skills/astra-orchestrator/references/maintenance.md`
+- `~/.agents/skills/astra-orchestrator/references/semble.md`
 
-Start a new Codex session after an apply that changes configuration, role
-instructions, or the skill so it can load the applied files. This workflow does
-not restart Codex or override a model/effort explicitly selected in a session.
+Every original managed file must exist and match its recorded state (only the owned
+config values are compared). All three added destinations must be absent. An existing
+file, even with identical bytes, is an ownership collision: preserve it and reconcile
+deliberately. Do not delete it or the receipt merely to silence the guard. New files
+are created exclusively, so a late local file cannot be overwritten.
+
+The same migration retires `~/.codex/agents/research_verifier.toml`. The installed
+file must still match the version-1 receipt; missing or locally edited content blocks
+migration. Apply backs it up before removal and restores it if the migration rolls
+back. It is absent from the version-2 receipt and maintained source.
+
+After migration all 11 files are tracked; a missing solver or reference is drift,
+not permission to recreate it silently. A genuinely unmanaged installation still
+requires an explicitly prepared private baseline of every existing managed file.
+This remains a maintenance workflow, not a blank-machine installer.
+
+## Apply protections and recovery
+
+Apply merges only the allowlisted config keys while preserving unrelated settings
+and comments. Roles, skill, and references are copied literally. No unrelated files
+are removed. In particular, `agents.interrupt_message`, permissions, MCP/app settings,
+and private machine configuration remain local.
+
+The workflow checks clean committed source, exact allowed file paths, role TOML,
+skill YAML and reference links, documented model/effort pairs, secrets patterns,
+installed hashes/values, symlinks, checkout identity, and concurrent edits. It locks
+other applies, snapshots and backs up affected state, and rechecks before writing.
+It skips unchanged file bytes. Report validation as structural/catalog checks,
+not proof that a model was actually invoked. Pattern scans are not a secrecy guarantee.
+
+State: `~/.local/state/astra-orchestrator/state.json`.
+Backups: `~/.local/state/astra-orchestrator/backups/`.
+The apply output identifies the exact backup. Keep both private: config backups
+include unrelated settings. The manifest records each original mode and backup path;
+new migration files have `absent: true` instead of a backup file. The prior receipt
+is preserved. Do not publish these files to prove installation.
+
+On a write failure, rollback restores attempted changes and the matching receipt,
+removes newly created managed files, and removes only empty directories created by
+that attempt. It preserves conflicting later edits and reports incomplete rollback
+rather than destroying them. Individual file publication is atomic, but a process kill
+or machine failure across multiple files may still require manual recovery.
+
+For recovery, preserve newer local work first. Restore originals and the matching
+receipt from one backup; for `absent: true` entries remove only the corresponding
+files created by that apply after confirming there is no newer work to preserve.
+Do not mix backup generations. An old version-1 receipt must have exactly its original
+nine managed files; version 2 has eleven. Do not edit receipt hashes to bypass drift.
+
+A moved checkout or changed origin requires deliberate identity reconciliation.
+On ordinary drift, compare installed content, maintained source, and the recorded
+commit; preserve approved local edits in the repository before reconciling installation.
+There is no force-overwrite option. Start a new Codex session after an apply changes
+configuration, role instructions, or the skill. Apply does not restart running sessions.
 
 ## Original-project updates
 
-`origin` is the fork. `upstream` is
+`origin` is this fork; `upstream` is
 `https://github.com/donvito/codex-astra-luna-orchestrator.git`.
-`main` is reserved for the original-project reference, not personal changes.
-The personal branch starts from the fork's existing reference commit
-`642b16074ba8973d4f920ad8cbfb542bde3b4682`. This migration does not advance `main`,
-merge newer original-project changes, or adopt upstream PR #15.
+Keep `main` upstream-only. Review upstream fixes separately and port only approved
+changes to `personal`; never merge `personal` into `main` or auto-apply upstream changes.
+Inherited `profiles/`, old guides, and `setup.sh`/`setup.ps1` remain reference material,
+not this setup's installer. Upstream PR #15 is not adopted.
 
-For a separately requested upstream review, fetch upstream, inspect the changes
-in an isolated checkout, and review individual fixes for applicability. Updating
-`main` must preserve its original-project-only history and must never run apply.
-Port only explicitly approved changes into `orchestrator/` on `personal`, test,
-commit, and apply through the same workflow. Do not merge `personal` into `main`.
-The inherited `profiles/`, old guides, and `setup.sh`/`setup.ps1` are historical
-upstream reference material; do not run those installers for this personal setup.
-
-The earlier interrupted customization checkout and its untracked files were
-preserved separately. Its private machine-specific commits were not imported
-into the published personal branch history.
+The original interrupted customization checkout and its recovery issues are separate.
+This workflow does not repair it, import its private history, or authorize its cleanup.

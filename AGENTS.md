@@ -17,6 +17,8 @@ credentials, session history, logs, or machine-specific paths into this repo.
 Use Conventional Commit subjects (`feat:`, `fix:`, `docs:`, `chore:`, with an
 optional scope) consistent with the existing customization commits.
 
+For performance investigations and usage reporting, read `PERFORMANCE.md`.
+
 ## Delegation
 
 For complex coding tasks, use the `astra-orchestrator` skill when its trigger conditions match.

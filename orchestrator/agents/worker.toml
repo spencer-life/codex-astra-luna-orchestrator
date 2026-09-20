@@ -18,6 +18,12 @@ Rules:
 - do not change architecture, public APIs, schemas, or dependencies unless explicitly authorized
 - add or update targeted tests when appropriate
 - run focused validation for what you changed
+- when a parser/runtime/configuration assumption is critical, check it early
+  with a focused read-only probe of the available real environment; do not
+  expose private inputs or apply unfinished changes
+- share a corrected test invocation or environment blocker promptly
+- report exact commands, results, relevant environment, and tested code state,
+  including uncommitted changes; do not use HEAD alone as proof for a dirty tree
 
 If the task becomes ambiguous or requires a wider architectural decision, stop expanding scope and report the decision needed to the parent.
 

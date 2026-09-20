@@ -1,12 +1,12 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["tomlkit==0.15.1"]
+# dependencies = ["tomlkit==0.15.1", "PyYAML==6.0.3"]
 # ///
 """Validate and apply the maintained Astra orchestrator source.
 
 The repository owns the orchestrator files under ``orchestrator/``.  This
-script applies the seven role files and the skill byte-for-byte, and merges
+script applies the role files, skill, and references byte-for-byte, and merges
 only the declared settings into the installed Codex configuration.  It is
 deliberately conservative: an apply requires a clean ``personal`` branch and
 refuses unexpected changes in the installed managed files.
@@ -32,12 +32,14 @@ from pathlib import Path
 from typing import Any, Iterator
 from urllib.parse import urlsplit
 
+import yaml
+
 from tomlkit import dumps, parse, table
 from tomlkit.exceptions import ParseError
 
 
 SOURCE_CONFIG = Path("orchestrator/config.toml")
-ROLE_NAMES = (
+V1_ROLE_NAMES = (
     "explorer",
     "worker",
     "tester",
@@ -46,10 +48,23 @@ ROLE_NAMES = (
     "semble-search",
     "research_verifier",
 )
+ROLE_NAMES = (
+    "explorer",
+    "worker",
+    "tester",
+    "researcher",
+    "reviewer",
+    "semble-search",
+    "solver",
+)
+SKILL_PATH = Path("orchestrator/skills/astra-orchestrator/SKILL.md")
+REFERENCE_NAMES = ("maintenance.md", "semble.md")
+REFERENCE_FILES = tuple(SKILL_PATH.parent / "references" / name for name in REFERENCE_NAMES)
 SOURCE_FILES = (
     SOURCE_CONFIG,
     *(Path("orchestrator/agents") / f"{name}.toml" for name in ROLE_NAMES),
-    Path("orchestrator/skills/astra-orchestrator/SKILL.md"),
+    SKILL_PATH,
+    *REFERENCE_FILES,
 )
 
 ROOT_KEYS = {"model", "model_reasoning_effort", "agents"}
@@ -78,6 +93,32 @@ DESTINATIONS = {
         ".agents/skills/astra-orchestrator/SKILL.md"
     ),
 }
+DESTINATIONS.update({path: Path(".agents/skills/astra-orchestrator/references") / path.name
+                     for path in REFERENCE_FILES})
+ADDED_SOURCES = {Path("orchestrator/agents/solver.toml"), *REFERENCE_FILES}
+ADDED_DESTINATIONS = {DESTINATIONS[path] for path in ADDED_SOURCES}
+RETIRED_SOURCE = Path("orchestrator/agents/research_verifier.toml")
+RETIRED_DESTINATIONS = {Path(".codex/agents/research_verifier.toml")}
+LEGACY_DESTINATIONS = {
+    SOURCE_CONFIG: Path(".codex/config.toml"),
+    **{
+        Path("orchestrator/agents") / f"{name}.toml": Path(".codex/agents") / f"{name}.toml"
+        for name in V1_ROLE_NAMES
+    },
+    SKILL_PATH: Path(".agents/skills/astra-orchestrator/SKILL.md"),
+}
+STATE_VERSION = 2
+# Documentation snapshot, not an assertion about any account's live availability.
+# https://developers.openai.com/api/docs/models/gpt-6-astra
+# https://developers.openai.com/api/docs/models/gpt-5.6-{sol,luna,terra}
+MODEL_SUPPORT_CHECKED = "2026-09-20"
+REASONING_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
+MODEL_EFFORTS = {
+    "gpt-6-astra": REASONING_EFFORTS,
+    **{name: REASONING_EFFORTS | {"none"} for name in
+       ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")},
+}
+
 SECRET_PATTERNS = (
     re.compile(r"(?:sk|rk)-[A-Za-z0-9]{20,}"),
     re.compile(r"(?:ghp|github_pat|xox[baprs])_[A-Za-z0-9_-]{12,}"),
@@ -89,6 +130,9 @@ PRIVATE_HOME_PATTERN = re.compile(r"(?<![A-Za-z0-9_.-])/home/[A-Za-z0-9_.-]+(?:/
 
 class SyncError(RuntimeError):
     """A safe, user-facing refusal or apply failure."""
+
+
+SnapshotEntry = tuple[bytes, int, int, int] | None
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -201,7 +245,90 @@ def validate_source_tree(repo: Path) -> dict[Path, bytes]:
         if rel.parts[:2] == ("orchestrator", "agents"):
             validate_role(rel.stem, data)
         contents[rel] = data
+    validate_skill(contents)
     return contents
+
+
+def validate_model_effort(model: str, effort: str) -> None:
+    if model not in MODEL_EFFORTS or effort not in MODEL_EFFORTS[model]:
+        fail(f"unsupported model/effort in documented matrix: {model}/{effort}; "
+             "verify current docs/catalog before changing the maintained matrix")
+
+
+def validate_skill(contents: dict[Path, bytes]) -> None:
+    try:
+        text = contents[SKILL_PATH].decode("utf-8")
+        lines = text.splitlines()
+        if not lines or lines[0] != "---":
+            fail("skill frontmatter must begin with ---")
+        end = lines.index("---", 1)
+        header = "\n".join(lines[1:end])
+        node = yaml.compose(header, Loader=yaml.SafeLoader)
+        if not isinstance(node, yaml.MappingNode):
+            fail("skill frontmatter must be a mapping")
+        keys = [k.value for k, _ in node.value]
+        if len(keys) != len(set(keys)):
+            fail("duplicate skill frontmatter keys")
+        meta = yaml.safe_load(header)
+        if not isinstance(meta, dict) or set(meta) != {"name", "description"}:
+            fail("skill frontmatter must contain exactly name and description")
+        if meta["name"] != "astra-orchestrator" or not isinstance(meta["description"], str) or not meta["description"].strip():
+            fail("invalid skill name or description")
+        if not "\n".join(lines[end + 1:]).strip():
+            fail("skill body is empty")
+        # Only the allowlisted installed references may be used by this skill.
+        for ref in re.findall(r"\]\((references/[^)]+)\)", text):
+            path = SKILL_PATH.parent / ref
+            if path not in REFERENCE_FILES or path not in contents or not contents[path].strip():
+                fail(f"unmanaged or missing skill reference: {ref}")
+        for path in REFERENCE_FILES:
+            if not contents[path].strip() or f"references/{path.name}" not in text:
+                fail(f"empty or unlinked skill reference: {path.name}")
+        semble = contents[Path("orchestrator/agents/semble-search.toml")].decode("utf-8")
+        if "~/.agents/skills/astra-orchestrator/references/semble.md" not in semble:
+            fail("Semble role must point to its installed reference")
+    except (UnicodeError, ValueError, yaml.YAMLError) as exc:
+        fail(f"invalid skill frontmatter: {exc}")
+
+
+def run_compatibility(repo: Path, catalog_path: Path) -> dict[str, Any]:
+    """Check explicit selections against a caller-supplied local model catalog."""
+    contents = validate_source_tree(repo)
+    settings = source_settings(contents)
+    pairs = [("root", settings["model"], settings["model_reasoning_effort"]),
+             ("fallback", settings["agents"]["default_subagent_model"],
+              settings["agents"]["default_subagent_reasoning_effort"])]
+    for name in ROLE_NAMES:
+        role = parse(contents[Path("orchestrator/agents") / f"{name}.toml"].decode())
+        pairs.append((name, role["model"], role["model_reasoning_effort"]))
+    ensure_regular_file(catalog_path)
+    try:
+        payload = json.loads(catalog_path.read_text(encoding="utf-8"))
+        models = payload.get("models") if isinstance(payload, dict) else None
+        if not isinstance(models, list):
+            fail("catalog must contain a models array; unsupported catalog schema")
+        index = {}
+        for model in models:
+            if not isinstance(model, dict) or not isinstance(model.get("slug"), str):
+                fail("catalog contains an invalid model entry")
+            if model["slug"] in index:
+                fail("catalog contains duplicate model slugs")
+            levels = model.get("supported_reasoning_levels")
+            if not isinstance(levels, list):
+                index[model["slug"]] = None
+                continue
+            if any(not isinstance(level, dict) or not isinstance(level.get("effort"), str)
+                   for level in levels):
+                fail("unsupported catalog reasoning-level schema")
+            index[model["slug"]] = {level["effort"] for level in levels}
+        for role, model, effort in pairs:
+            if not index.get(model) or effort not in index[model]:
+                fail(f"catalog does not advertise {role}: {model}/{effort}; refresh or inspect locally, do not silently substitute")
+    except (ValueError, UnicodeError) as exc:
+        fail(f"invalid model catalog: {exc}")
+    return {"status": "catalog-compatible", "checked_roles": len(pairs),
+            "catalog_sha256": sha256_file(catalog_path),
+            "note": "Advertised catalog support only; refresh locally and verify effective settings in a new session. No request was run."}
 
 
 def plain_value(value: Any) -> Any:
@@ -238,6 +365,8 @@ def parse_source_config(data: bytes) -> dict[str, Any]:
     for key in ("default_subagent_model", "default_subagent_reasoning_effort"):
         if not isinstance(agents[key], str) or not agents[key].strip():
             fail(f"agents.{key} must be a non-empty string")
+    validate_model_effort(str(doc["model"]), str(doc["model_reasoning_effort"]))
+    validate_model_effort(str(agents["default_subagent_model"]), str(agents["default_subagent_reasoning_effort"]))
     return {
         "model": str(doc["model"]),
         "model_reasoning_effort": str(doc["model_reasoning_effort"]),
@@ -265,6 +394,7 @@ def validate_role(name: str, data: bytes) -> None:
         not isinstance(doc["sandbox_mode"], str) or not doc["sandbox_mode"].strip()
     ):
         fail(f"orchestrator/agents/{name}.toml sandbox_mode must be a non-empty string")
+    validate_model_effort(str(doc["model"]), str(doc["model_reasoning_effort"]))
 
 
 def source_settings(contents: dict[Path, bytes]) -> dict[str, Any]:
@@ -390,35 +520,64 @@ def merged_config_bytes(path: Path, settings: dict[str, Any], existing: bytes | 
     return dumps(doc).encode("utf-8")
 
 
-def ensure_destinations(home: Path, *, allow_missing: bool = False) -> dict[Path, Path]:
+def migration_additions(state: dict[str, Any] | None, home: Path) -> set[Path]:
+    return {home / path for path in ADDED_DESTINATIONS} if state and state["version"] == 1 else set()
+
+
+def migration_retirements(state: dict[str, Any] | None, home: Path) -> set[Path]:
+    return {home / path for path in RETIRED_DESTINATIONS} if state and state["version"] == 1 else set()
+
+
+def ensure_destinations(home: Path, *, allow_missing: bool = False,
+                        additions: set[Path] | None = None) -> dict[Path, Path]:
     paths = destination_paths(home)
     for dest in paths.values():
-        ensure_no_symlink(dest.parent)
-        ensure_regular_file(dest, allow_missing=allow_missing)
+        if dest in (additions or set()):
+            ensure_no_symlink(dest, allow_missing=True)
+            if os.path.lexists(dest):
+                fail(f"new managed destination already exists; preserve and reconcile it: {dest}")
+        else:
+            ensure_no_symlink(dest.parent)
+            ensure_regular_file(dest, allow_missing=allow_missing)
     return paths
 
 
-def capture_destinations(destinations: dict[Path, Path]) -> dict[Path, tuple[bytes, int]]:
-    snapshot: dict[Path, tuple[bytes, int]] = {}
-    for dest in destinations.values():
-        ensure_regular_file(dest)
-        snapshot[dest] = (dest.read_bytes(), stat.S_IMODE(dest.stat().st_mode))
+def capture_destinations(destinations: dict[Path, Path], *,
+                         additions: set[Path] | None = None,
+                         retirements: set[Path] | None = None) -> dict[Path, SnapshotEntry]:
+    snapshot = {}
+    for dest in (*destinations.values(), *(retirements or set())):
+        if dest in (additions or set()) and not os.path.lexists(dest):
+            ensure_no_symlink(dest, allow_missing=True)
+            snapshot[dest] = None
+        else:
+            ensure_regular_file(dest)
+            info = dest.stat()
+            snapshot[dest] = (
+                dest.read_bytes(),
+                stat.S_IMODE(info.st_mode),
+                info.st_dev,
+                info.st_ino,
+            )
     return snapshot
 
 
-def assert_snapshot_matches_state(
-    state: dict[str, Any], home: Path, destinations: dict[Path, Path], snapshot: dict[Path, tuple[bytes, int]]
-) -> None:
+def assert_snapshot_matches_state(state, home, destinations, snapshot) -> None:
     saved_hashes = state["installed_hashes"]
     config_dest = destinations[SOURCE_CONFIG]
     config_doc = parse_config_bytes(snapshot[config_dest][0], config_dest)
     if get_managed_settings(config_doc) != state["managed_settings"]:
         fail("managed settings in installed config changed during apply preparation")
-    for dest, (data, _mode) in snapshot.items():
+    additions = migration_additions(state, home)
+    for dest, entry in snapshot.items():
+        if dest in additions:
+            if entry is not None:
+                fail(f"new managed destination appeared during apply preparation: {dest}")
+            continue
         if dest == config_dest:
             continue
         key = home_relative(dest.relative_to(home))
-        if sha256_bytes(data) != saved_hashes[key]:
+        if entry is None or sha256_bytes(entry[0]) != saved_hashes[key]:
             fail(f"managed installed file changed during apply preparation: {dest}")
 
 
@@ -452,7 +611,7 @@ def load_state(path: Path) -> dict[str, Any] | None:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         fail(f"invalid state file {path}: {exc}")
-    if not isinstance(value, dict) or value.get("version") != 1:
+    if not isinstance(value, dict) or type(value.get("version")) is not int or value["version"] not in (1, STATE_VERSION):
         fail(f"unsupported state file: {path}")
     return value
 
@@ -498,7 +657,8 @@ def assert_state_identity(state: dict[str, Any], identity: dict[str, Any], repo:
 def assert_managed_state(state: dict[str, Any], home: Path, destinations: dict[Path, Path]) -> None:
     saved_hashes = state.get("installed_hashes")
     saved_settings = state.get("managed_settings")
-    expected_keys = {home_relative(dest.relative_to(home)) for dest in destinations.values()}
+    expected_keys = {path.as_posix() for path in
+                     (LEGACY_DESTINATIONS if state["version"] == 1 else DESTINATIONS).values()}
     if not isinstance(saved_hashes, dict) or set(saved_hashes) != expected_keys:
         fail("state is missing the complete managed file hash set")
     if not isinstance(saved_settings, dict):
@@ -507,7 +667,13 @@ def assert_managed_state(state: dict[str, Any], home: Path, destinations: dict[P
     current_doc = read_installed_config(config_dest)
     if get_managed_settings(current_doc) != saved_settings:
         fail("managed settings in installed config changed since installation")
+    additions = migration_additions(state, home)
     for dest in destinations.values():
+        if dest in additions:
+            if os.path.lexists(dest):
+                fail(f"new managed destination already exists; preserve and reconcile it: {dest}")
+            ensure_no_symlink(dest, allow_missing=True)
+            continue
         ensure_regular_file(dest)
         key = home_relative(dest.relative_to(home))
         # The configuration hash is a receipt for the applied result, while
@@ -517,13 +683,18 @@ def assert_managed_state(state: dict[str, Any], home: Path, destinations: dict[P
             continue
         if sha256_file(dest) != saved_hashes[key]:
             fail(f"managed installed file changed since installation: {dest}")
+    for dest in migration_retirements(state, home):
+        ensure_regular_file(dest)
+        key = home_relative(dest.relative_to(home))
+        if sha256_file(dest) != saved_hashes[key]:
+            fail(f"retired managed file changed since installation: {dest}")
 
 
 def build_target_bytes(
     contents: dict[Path, bytes],
     settings: dict[str, Any],
     destinations: dict[Path, Path],
-    snapshot: dict[Path, tuple[bytes, int]] | None = None,
+    snapshot: dict[Path, SnapshotEntry] | None = None,
 ) -> dict[Path, bytes]:
     targets: dict[Path, bytes] = {}
     for source, dest in destinations.items():
@@ -540,7 +711,7 @@ def make_backup(
     destinations: dict[Path, Path],
     state_path: Path,
     home: Path,
-    snapshot: dict[Path, tuple[bytes, int]],
+    snapshot: dict[Path, SnapshotEntry],
 ) -> tuple[Path, dict[str, Any]]:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     backups_dir = state_dir / "backups"
@@ -556,7 +727,10 @@ def make_backup(
     backup.mkdir(mode=0o700)
     (backup / "files").mkdir(mode=0o700)
     manifest: dict[str, Any] = {"files": {}, "state": None}
-    for index, dest in enumerate(destinations.values()):
+    for index, dest in enumerate(snapshot):
+        if snapshot[dest] is None:
+            manifest["files"][home_relative(dest.relative_to(home))] = {"absent": True}
+            continue
         target = backup / "files" / str(index)
         target.write_bytes(snapshot[dest][0])
         target.chmod(0o600)
@@ -602,16 +776,107 @@ def write_atomic(path: Path, data: bytes, *, mode: int | None = None) -> None:
         raise
 
 
-def restore_backup(backup: Path, manifest: dict[str, Any], home: Path, state_path: Path, destinations: dict[Path, Path]) -> None:
+def make_parents(path: Path, created: list[Path]) -> None:
+    if path.exists():
+        ensure_no_symlink(path)
+        if not path.is_dir():
+            fail(f"destination parent is not a directory: {path}")
+        return
+    ensure_no_symlink(path, allow_missing=True)
+    make_parents(path.parent, created)
+    path.mkdir(mode=0o700)
+    created.append(path)
+
+
+def write_new_atomic(path: Path, data: bytes, *, created: dict | None = None) -> None:
+    """Publish a new regular file exclusively; never replace a late local file."""
+    ensure_no_symlink(path.parent)
+    fd, name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    temp = Path(name)
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            os.fchmod(fh.fileno(), 0o600)
+            fh.write(data)
+            fh.flush()
+            os.fsync(fh.fileno())
+        info = temp.stat()
+        os.link(temp, path)  # exclusive: EEXIST preserves a concurrent local file
+        if created is not None:
+            created[path] = (info.st_dev, info.st_ino)
+        directory_fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    finally:
+        temp.unlink(missing_ok=True)
+
+
+def restore_backup(backup, manifest, home, state_path, destinations, *,
+                   attempted=None, targets=None, retirements=(), created_dirs=(), created_new=None) -> None:
+    issues = []
     for rel, info in manifest["files"].items():
         dest = home / rel
-        ensure_no_symlink(dest.parent)
-        write_atomic(dest, (backup / info["backup"]).read_bytes(), mode=int(info["mode"]))
-    if manifest.get("state"):
-        write_atomic(state_path, (backup / manifest["state"]).read_bytes(), mode=0o600)
-    elif os.path.lexists(state_path):
-        ensure_regular_file(state_path)
-        state_path.unlink()
+        if attempted is not None and dest not in attempted:
+            continue
+        try:
+            original = None if info.get("absent") else (backup / info["backup"]).read_bytes()
+            try:
+                info_now = dest.lstat()
+            except FileNotFoundError:
+                info_now = None
+                current = None
+            else:
+                if stat.S_ISLNK(info_now.st_mode):
+                    raise SyncError("path is a symlink")
+                if not stat.S_ISREG(info_now.st_mode):
+                    raise SyncError("path is not a regular file")
+                ensure_no_symlink(dest.parent)
+                current = dest.read_bytes()
+            if current == original:
+                continue
+            if original is None and created_new is not None:
+                if info_now is None or created_new.get(dest) != (info_now.st_dev, info_now.st_ino):
+                    issues.append(f"{rel} (conflicting local change)")
+                    continue
+            # Preserve a later independent edit instead of making rollback destructive.
+            if targets is not None:
+                expected_current = None if dest in retirements else targets.get(dest)
+                if current != expected_current:
+                    issues.append(f"{rel} (conflicting local change)")
+                    continue
+            if original is None:
+                dest.unlink(missing_ok=True)
+            else:
+                write_atomic(dest, original, mode=int(info["mode"]))
+        except Exception as exc:
+            issues.append(f"{rel} ({exc})")
+
+    try:
+        if manifest.get("state"):
+            write_atomic(state_path, (backup / manifest["state"]).read_bytes(), mode=0o600)
+        elif os.path.lexists(state_path):
+            ensure_regular_file(state_path)
+            state_path.unlink()
+    except Exception as exc:
+        issues.append(f"{home_relative(state_path.relative_to(home))} ({exc})")
+    for directory in reversed(created_dirs):
+        # Only directories created by this attempt; never remove unrelated files.
+        try:
+            directory.rmdir()
+        except OSError as exc:
+            issues.append(f"{home_relative(directory.relative_to(home))} ({exc})")
+    if issues:
+        fail("rollback incomplete; conflicts/errors preserved: " + ", ".join(issues))
+
+
+def remove_retired_file(path: Path, expected: tuple[bytes, int, int, int]) -> None:
+    """Remove only the exact legacy file captured in the pre-write snapshot."""
+    ensure_regular_file(path)
+    info = path.stat()
+    if (info.st_dev, info.st_ino) != (expected[2], expected[3]) or path.read_bytes() != expected[0]:
+        fail(f"retired managed file changed during apply preparation: {path}")
+    path.unlink()
 
 
 def make_state(
@@ -624,7 +889,7 @@ def make_state(
     targets: dict[Path, bytes],
 ) -> dict[str, Any]:
     return {
-        "version": 1,
+        "version": STATE_VERSION,
         "repository": {key: identity[key] for key in ("root", "origin_urls", "branch")},
         "source_commit": source_commit,
         "source_hashes": {str(path): sha256_bytes(data) for path, data in contents.items()},
@@ -657,6 +922,8 @@ def run_validate(repo: Path) -> dict[str, Any]:
         "repository": str(repo),
         "source_files": len(contents),
         "managed_settings": settings,
+        "compatibility": "documented-matrix only; run compatibility with a current local catalog",
+        "matrix_checked": MODEL_SUPPORT_CHECKED,
         "source_hashes": {str(path): sha256_bytes(data) for path, data in contents.items()},
     }
 
@@ -664,20 +931,27 @@ def run_validate(repo: Path) -> dict[str, Any]:
 def run_plan(repo: Path, home: Path) -> dict[str, Any]:
     contents = validate_source_tree(repo)
     settings = source_settings(contents)
-    destinations = ensure_destinations(home)
-    targets = build_target_bytes(contents, settings, destinations)
     state_path = state_dir_for(home) / "state.json"
     state = load_state(state_path) if os.path.lexists(state_path) else None
+    additions = migration_additions(state, home)
+    retirements = migration_retirements(state, home)
+    destinations = ensure_destinations(home, additions=additions)
+    targets = build_target_bytes(contents, settings, destinations)
     identity = repository_identity(repo, require_clean=False)
     if state:
         assert_state_identity(state, identity, repo)
         assert_managed_state(state, home, destinations)
-    changes = [str(path.relative_to(home)) for path, data in targets.items() if path.read_bytes() != data]
+    changes = [str(path.relative_to(home)) for path, data in targets.items()
+               if not path.exists() or path.read_bytes() != data]
+    changes.extend(sorted(str(path.relative_to(home)) for path in retirements))
     return {
         "source_commit": git_output(repo, "rev-parse", "--verify", "HEAD", check=False) or None,
         "state": "installed" if state else "bootstrap-required",
         "changes": changes,
         "managed_files": len(targets),
+        "migration": "v1-to-v2" if additions or retirements else None,
+        "new_files": sorted(str(path.relative_to(home)) for path in additions),
+        "removed_files": sorted(str(path.relative_to(home)) for path in retirements),
     }
 
 
@@ -687,10 +961,11 @@ def run_status(repo: Path, home: Path) -> dict[str, Any]:
     result: dict[str, Any] = {"state": "installed" if state else "not-installed", "state_path": str(state_path)}
     if state:
         identity = repository_identity(repo, require_clean=False)
-        destinations = ensure_destinations(home)
+        destinations = ensure_destinations(home, additions=migration_additions(state, home))
         assert_state_identity(state, identity, repo)
         assert_managed_state(state, home, destinations)
-        result.update({"source_commit": state.get("source_commit"), "installed_at": state.get("installed_at")})
+        result.update({"source_commit": state.get("source_commit"), "installed_at": state.get("installed_at"),
+                       "receipt_version": state["version"], "migration_pending": state["version"] == 1})
     return result
 
 
@@ -716,11 +991,13 @@ def run_apply(repo: Path, home: Path, baseline_path: str | None) -> dict[str, An
     contents = validate_source_tree(repo)
     settings = source_settings(contents)
     identity = repository_identity(repo, require_clean=True)
-    destinations = ensure_destinations(home)
     state_dir = ensure_private_state_dir(home)
     state_path = state_dir / "state.json"
     with apply_lock(state_dir):
         state = load_state(state_path) if os.path.lexists(state_path) else None
+        additions = migration_additions(state, home)
+        retirements = migration_retirements(state, home)
+        destinations = ensure_destinations(home, additions=additions)
         if state is None:
             if not baseline_path:
                 fail("first apply requires --bootstrap-baseline <json>")
@@ -744,10 +1021,13 @@ def run_apply(repo: Path, home: Path, baseline_path: str | None) -> dict[str, An
         else:
             assert_state_identity(state, identity, repo)
             assert_managed_state(state, home, destinations)
-        snapshot = capture_destinations(destinations)
+        snapshot = capture_destinations(destinations, additions=additions, retirements=retirements)
         if state is None:
             assert_baseline_unchanged(baseline, home, destinations)
-            for dest, (data, _mode) in snapshot.items():
+            for dest, entry in snapshot.items():
+                if entry is None:
+                    fail(f"managed file unexpectedly absent during bootstrap preparation: {dest}")
+                data = entry[0]
                 key = home_relative(dest.relative_to(home))
                 if sha256_bytes(data) != baseline[key]:
                     fail(f"bootstrap baseline changed during apply preparation: {dest}")
@@ -758,24 +1038,39 @@ def run_apply(repo: Path, home: Path, baseline_path: str | None) -> dict[str, An
         if final_identity["commit"] != identity["commit"]:
             fail("source HEAD changed during apply preparation; retry after review")
         assert_source_matches_commit(repo, final_identity["commit"], contents)
-        unchanged = all(path.read_bytes() == data for path, data in targets.items())
+        unchanged = not retirements and all(path.exists() and path.read_bytes() == data for path, data in targets.items())
         if unchanged and state and state.get("source_commit") == identity["commit"]:
             return {"status": "already-applied", "commit": identity["commit"], "state_path": str(state_path)}
         backup, manifest = make_backup(state_dir, destinations, state_path, home, snapshot)
         # Recheck after the backup has captured the original bytes.  If a
         # cooperative edit happened during backup creation, leave it in place
         # and stop before entering the write/rollback window.
-        current_snapshot = capture_destinations(destinations)
+        current_snapshot = capture_destinations(destinations, additions=additions, retirements=retirements)
         if current_snapshot != snapshot:
             fail("installed files changed during apply preparation; retry after review")
+        attempted: set[Path] = set()
+        created_dirs: list[Path] = []
+        created_new: dict[Path, tuple[int, int]] = {}
         try:
+            for path in sorted(retirements):
+                attempted.add(path)
+                remove_retired_file(path, snapshot[path])
             for path, data in targets.items():
-                write_atomic(path, data)
+                if snapshot[path] is not None and snapshot[path][0] == data:
+                    continue
+                make_parents(path.parent, created_dirs)
+                attempted.add(path)
+                if snapshot[path] is None:
+                    write_new_atomic(path, data, created=created_new)
+                else:
+                    write_atomic(path, data)
             new_state = make_state(repo, identity, identity["commit"], contents, settings, home, targets)
             write_atomic(state_path, json.dumps(new_state, indent=2, sort_keys=True).encode() + b"\n", mode=0o600)
         except Exception as exc:
             try:
-                restore_backup(backup, manifest, home, state_path, destinations)
+                restore_backup(backup, manifest, home, state_path, destinations,
+                               attempted=attempted, targets=targets, retirements=retirements,
+                               created_dirs=created_dirs, created_new=created_new)
             except Exception as rollback_exc:
                 fail(f"apply failed ({exc}); rollback also failed ({rollback_exc}); backup retained at {backup}")
             fail(f"apply failed and was rolled back; backup retained at {backup}: {exc}")
@@ -790,11 +1085,13 @@ def add_common_options(parser: argparse.ArgumentParser) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("validate", "plan", "apply", "status", "sync"):
+    for name in ("validate", "plan", "apply", "status", "sync", "compatibility"):
         child = sub.add_parser(name)
         add_common_options(child)
         if name == "apply":
             child.add_argument("--bootstrap-baseline")
+        if name == "compatibility":
+            child.add_argument("--model-catalog", required=True, help="Current local Codex JSON catalog; read-only")
     args = parser.parse_args(argv)
     try:
         script = Path(__file__).resolve()
@@ -808,6 +1105,8 @@ def main(argv: list[str] | None = None) -> int:
             result = run_status(repo, home)
         elif args.command == "sync":
             result = run_sync(repo)
+        elif args.command == "compatibility":
+            result = run_compatibility(repo, Path(args.model_catalog).expanduser())
         else:
             result = run_apply(repo, home, args.bootstrap_baseline)
         print(json.dumps(result, indent=2, sort_keys=True))

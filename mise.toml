@@ -1,0 +1,26 @@
+[tools]
+uv = "0.12.13"
+
+[tasks."orchestrator:validate"]
+description = "Validate the committed orchestrator source"
+run = "uv run --script scripts/orchestrator_sync.py validate"
+
+[tasks."orchestrator:plan"]
+description = "Show the changes an approved source commit would apply"
+run = "uv run --script scripts/orchestrator_sync.py plan"
+
+[tasks."orchestrator:apply"]
+description = "Apply the personal branch source to the installed Codex files"
+run = "uv run --script scripts/orchestrator_sync.py apply"
+
+[tasks."orchestrator:status"]
+description = "Show installed orchestrator state"
+run = "uv run --script scripts/orchestrator_sync.py status"
+
+[tasks."orchestrator:sync"]
+description = "Fast-forward the committed personal branch from the fork"
+run = "uv run --script scripts/orchestrator_sync.py sync"
+
+[tasks."orchestrator:test"]
+description = "Run the guarded sync workflow tests"
+run = "uv run --with pytest --with tomlkit==0.15.1 python -m pytest tests/test_orchestrator_sync.py tests/test_token_usage.py"

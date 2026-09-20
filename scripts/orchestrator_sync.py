@@ -39,7 +39,7 @@ from tomlkit.exceptions import ParseError
 
 
 SOURCE_CONFIG = Path("orchestrator/config.toml")
-LEGACY_ROLE_NAMES = (
+V1_ROLE_NAMES = (
     "explorer",
     "worker",
     "tester",
@@ -48,7 +48,15 @@ LEGACY_ROLE_NAMES = (
     "semble-search",
     "research_verifier",
 )
-ROLE_NAMES = (*LEGACY_ROLE_NAMES, "solver")
+ROLE_NAMES = (
+    "explorer",
+    "worker",
+    "tester",
+    "researcher",
+    "reviewer",
+    "semble-search",
+    "solver",
+)
 SKILL_PATH = Path("orchestrator/skills/astra-orchestrator/SKILL.md")
 REFERENCE_NAMES = ("maintenance.md", "semble.md")
 REFERENCE_FILES = tuple(SKILL_PATH.parent / "references" / name for name in REFERENCE_NAMES)
@@ -89,7 +97,16 @@ DESTINATIONS.update({path: Path(".agents/skills/astra-orchestrator/references") 
                      for path in REFERENCE_FILES})
 ADDED_SOURCES = {Path("orchestrator/agents/solver.toml"), *REFERENCE_FILES}
 ADDED_DESTINATIONS = {DESTINATIONS[path] for path in ADDED_SOURCES}
-LEGACY_DESTINATIONS = {src: dest for src, dest in DESTINATIONS.items() if src not in ADDED_SOURCES}
+RETIRED_SOURCE = Path("orchestrator/agents/research_verifier.toml")
+RETIRED_DESTINATIONS = {Path(".codex/agents/research_verifier.toml")}
+LEGACY_DESTINATIONS = {
+    SOURCE_CONFIG: Path(".codex/config.toml"),
+    **{
+        Path("orchestrator/agents") / f"{name}.toml": Path(".codex/agents") / f"{name}.toml"
+        for name in V1_ROLE_NAMES
+    },
+    SKILL_PATH: Path(".agents/skills/astra-orchestrator/SKILL.md"),
+}
 STATE_VERSION = 2
 # Documentation snapshot, not an assertion about any account's live availability.
 # https://developers.openai.com/api/docs/models/gpt-6-astra
@@ -504,6 +521,10 @@ def migration_additions(state: dict[str, Any] | None, home: Path) -> set[Path]:
     return {home / path for path in ADDED_DESTINATIONS} if state and state["version"] == 1 else set()
 
 
+def migration_retirements(state: dict[str, Any] | None, home: Path) -> set[Path]:
+    return {home / path for path in RETIRED_DESTINATIONS} if state and state["version"] == 1 else set()
+
+
 def ensure_destinations(home: Path, *, allow_missing: bool = False,
                         additions: set[Path] | None = None) -> dict[Path, Path]:
     paths = destination_paths(home)
@@ -519,15 +540,22 @@ def ensure_destinations(home: Path, *, allow_missing: bool = False,
 
 
 def capture_destinations(destinations: dict[Path, Path], *,
-                         additions: set[Path] | None = None) -> dict[Path, tuple[bytes, int] | None]:
+                         additions: set[Path] | None = None,
+                         retirements: set[Path] | None = None) -> dict[Path, tuple[bytes, int, int, int] | None]:
     snapshot = {}
-    for dest in destinations.values():
+    for dest in (*destinations.values(), *(retirements or set())):
         if dest in (additions or set()) and not os.path.lexists(dest):
             ensure_no_symlink(dest, allow_missing=True)
             snapshot[dest] = None
         else:
             ensure_regular_file(dest)
-            snapshot[dest] = (dest.read_bytes(), stat.S_IMODE(dest.stat().st_mode))
+            info = dest.stat()
+            snapshot[dest] = (
+                dest.read_bytes(),
+                stat.S_IMODE(info.st_mode),
+                info.st_dev,
+                info.st_ino,
+            )
     return snapshot
 
 
@@ -652,6 +680,11 @@ def assert_managed_state(state: dict[str, Any], home: Path, destinations: dict[P
             continue
         if sha256_file(dest) != saved_hashes[key]:
             fail(f"managed installed file changed since installation: {dest}")
+    for dest in migration_retirements(state, home):
+        ensure_regular_file(dest)
+        key = home_relative(dest.relative_to(home))
+        if sha256_file(dest) != saved_hashes[key]:
+            fail(f"retired managed file changed since installation: {dest}")
 
 
 def build_target_bytes(
@@ -691,7 +724,7 @@ def make_backup(
     backup.mkdir(mode=0o700)
     (backup / "files").mkdir(mode=0o700)
     manifest: dict[str, Any] = {"files": {}, "state": None}
-    for index, dest in enumerate(destinations.values()):
+    for index, dest in enumerate(snapshot):
         if snapshot[dest] is None:
             manifest["files"][home_relative(dest.relative_to(home))] = {"absent": True}
             continue
@@ -777,7 +810,7 @@ def write_new_atomic(path: Path, data: bytes, *, created: dict | None = None) ->
 
 
 def restore_backup(backup, manifest, home, state_path, destinations, *,
-                   attempted=None, targets=None, created_dirs=(), created_new=None) -> None:
+                   attempted=None, targets=None, retirements=(), created_dirs=(), created_new=None) -> None:
     conflicts = []
     for rel, info in manifest["files"].items():
         dest = home / rel
@@ -794,9 +827,11 @@ def restore_backup(backup, manifest, home, state_path, destinations, *,
                 conflicts.append(rel)
                 continue
         # Preserve a later independent edit instead of making rollback destructive.
-        if targets is not None and current != targets[dest]:
-            conflicts.append(rel)
-            continue
+        if targets is not None:
+            expected_current = None if dest in retirements else targets.get(dest)
+            if current != expected_current:
+                conflicts.append(rel)
+                continue
         if original is None:
             dest.unlink(missing_ok=True)
         else:
@@ -812,6 +847,15 @@ def restore_backup(backup, manifest, home, state_path, destinations, *,
         # Only directories created by this attempt; never remove unrelated files.
         with contextlib.suppress(OSError):
             directory.rmdir()
+
+
+def remove_retired_file(path: Path, expected: tuple[bytes, int, int, int]) -> None:
+    """Remove only the exact legacy file captured in the pre-write snapshot."""
+    ensure_regular_file(path)
+    info = path.stat()
+    if (info.st_dev, info.st_ino) != (expected[2], expected[3]) or path.read_bytes() != expected[0]:
+        fail(f"retired managed file changed during apply preparation: {path}")
+    path.unlink()
 
 
 def make_state(
@@ -869,6 +913,7 @@ def run_plan(repo: Path, home: Path) -> dict[str, Any]:
     state_path = state_dir_for(home) / "state.json"
     state = load_state(state_path) if os.path.lexists(state_path) else None
     additions = migration_additions(state, home)
+    retirements = migration_retirements(state, home)
     destinations = ensure_destinations(home, additions=additions)
     targets = build_target_bytes(contents, settings, destinations)
     identity = repository_identity(repo, require_clean=False)
@@ -877,13 +922,15 @@ def run_plan(repo: Path, home: Path) -> dict[str, Any]:
         assert_managed_state(state, home, destinations)
     changes = [str(path.relative_to(home)) for path, data in targets.items()
                if not path.exists() or path.read_bytes() != data]
+    changes.extend(sorted(str(path.relative_to(home)) for path in retirements))
     return {
         "source_commit": git_output(repo, "rev-parse", "--verify", "HEAD", check=False) or None,
         "state": "installed" if state else "bootstrap-required",
         "changes": changes,
         "managed_files": len(targets),
-        "migration": "v1-to-v2" if additions else None,
+        "migration": "v1-to-v2" if additions or retirements else None,
         "new_files": sorted(str(path.relative_to(home)) for path in additions),
+        "removed_files": sorted(str(path.relative_to(home)) for path in retirements),
     }
 
 
@@ -928,6 +975,7 @@ def run_apply(repo: Path, home: Path, baseline_path: str | None) -> dict[str, An
     with apply_lock(state_dir):
         state = load_state(state_path) if os.path.lexists(state_path) else None
         additions = migration_additions(state, home)
+        retirements = migration_retirements(state, home)
         destinations = ensure_destinations(home, additions=additions)
         if state is None:
             if not baseline_path:
@@ -952,7 +1000,7 @@ def run_apply(repo: Path, home: Path, baseline_path: str | None) -> dict[str, An
         else:
             assert_state_identity(state, identity, repo)
             assert_managed_state(state, home, destinations)
-        snapshot = capture_destinations(destinations, additions=additions)
+        snapshot = capture_destinations(destinations, additions=additions, retirements=retirements)
         if state is None:
             assert_baseline_unchanged(baseline, home, destinations)
             for dest, (data, _mode) in snapshot.items():
@@ -966,20 +1014,23 @@ def run_apply(repo: Path, home: Path, baseline_path: str | None) -> dict[str, An
         if final_identity["commit"] != identity["commit"]:
             fail("source HEAD changed during apply preparation; retry after review")
         assert_source_matches_commit(repo, final_identity["commit"], contents)
-        unchanged = all(path.exists() and path.read_bytes() == data for path, data in targets.items())
+        unchanged = not retirements and all(path.exists() and path.read_bytes() == data for path, data in targets.items())
         if unchanged and state and state.get("source_commit") == identity["commit"]:
             return {"status": "already-applied", "commit": identity["commit"], "state_path": str(state_path)}
         backup, manifest = make_backup(state_dir, destinations, state_path, home, snapshot)
         # Recheck after the backup has captured the original bytes.  If a
         # cooperative edit happened during backup creation, leave it in place
         # and stop before entering the write/rollback window.
-        current_snapshot = capture_destinations(destinations, additions=additions)
+        current_snapshot = capture_destinations(destinations, additions=additions, retirements=retirements)
         if current_snapshot != snapshot:
             fail("installed files changed during apply preparation; retry after review")
         attempted: set[Path] = set()
         created_dirs: list[Path] = []
         created_new: dict[Path, tuple[int, int]] = {}
         try:
+            for path in sorted(retirements):
+                attempted.add(path)
+                remove_retired_file(path, snapshot[path])
             for path, data in targets.items():
                 if snapshot[path] is not None and snapshot[path][0] == data:
                     continue
@@ -994,8 +1045,8 @@ def run_apply(repo: Path, home: Path, baseline_path: str | None) -> dict[str, An
         except Exception as exc:
             try:
                 restore_backup(backup, manifest, home, state_path, destinations,
-                               attempted=attempted, targets=targets, created_dirs=created_dirs,
-                               created_new=created_new)
+                               attempted=attempted, targets=targets, retirements=retirements,
+                               created_dirs=created_dirs, created_new=created_new)
             except Exception as rollback_exc:
                 fail(f"apply failed ({exc}); rollback also failed ({rollback_exc}); backup retained at {backup}")
             fail(f"apply failed and was rolled back; backup retained at {backup}: {exc}")

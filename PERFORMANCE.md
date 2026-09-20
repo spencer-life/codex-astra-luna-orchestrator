@@ -7,7 +7,7 @@ This is an on-demand maintenance reference, not instructions every coding agent 
 
 Keep Astra Low root/reviewer; use Luna Medium for bounded exploration/research/search,
 Luna High for bounded implementation/testing and fallback, and Sol Medium as the
-new demanding-task solver. Preserve the separate Sol High research verifier.
+new demanding-task solver. The unused custom research verifier is removed.
 No permanent Terra role, routine Max, Fast-mode change, or dynamic model router is added.
 
 Select direct Astra execution when a difficult cohesive task would otherwise cause

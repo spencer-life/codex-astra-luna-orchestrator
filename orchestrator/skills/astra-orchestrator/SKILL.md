@@ -38,7 +38,6 @@ investigation or become a second implementation team.
 | researcher | Luna Medium | Focused version-specific primary-source research; read-only |
 | semble_search | Luna Medium | Optional semantic discovery; read-only task |
 | reviewer | Astra Low | Independent consequential change review; read-only |
-| research_verifier | Sol High | Separate consequential-research claim/citation workflow |
 
 Generic subagent fallback remains Luna High. Use named roles through the installed
 runtime's supported interface. Role files pin model and effort and may override
@@ -49,9 +48,8 @@ explicitly authorized. The cap is not a target. Preserve permissions, approvals,
 service tiers, and explicit session model/effort choices.
 
 Assign hard cross-component reasoning to the solver or root, not a Medium explorer
-just because the work involves reading. Preserve the separate research-verifier
-contract; do not make it mandatory for every lookup. All roles may use Semble
-without a search-agent hop.
+just because the work involves reading. All roles may use Semble without a
+search-agent hop.
 
 ## Delegate bounded ownership
 

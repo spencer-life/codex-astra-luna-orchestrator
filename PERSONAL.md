@@ -10,7 +10,7 @@ copies, not a competing source. Read `AGENTS.md` before repository changes.
 Maintain:
 
 - `orchestrator/config.toml`: root selection and only the five owned agent settings.
-- `orchestrator/agents/*.toml`: eight explicitly configured roles.
+- `orchestrator/agents/*.toml`: seven explicitly configured coding/research roles.
 - `orchestrator/skills/astra-orchestrator/SKILL.md`: the compact routing skill.
 - Its `references/maintenance.md` and `references/semble.md`: on-demand guidance.
 - `scripts/orchestrator_sync.py`, `mise.toml`, and tests: guarded maintenance.
@@ -31,8 +31,8 @@ Astra can execute difficult cohesive work directly; Luna need not fail first.
 Keep three open subagents at most and flat delegation unless explicitly authorized.
 The existing `max_depth = 1` value is preserved, not treated as proof that a specific
 Codex build enforces it. Preserve explicit session choices, approvals, service tiers,
-and existing sandbox settings. Semble's sandbox remains inherited; its assignment
-is read-only. `research_verifier.toml` remains byte-for-byte unchanged (Sol High).
+and existing sandbox settings. Semble's sandbox remains inherited; its assignment is read-only. The obsolete
+`research_verifier` role is retired by this migration and is no longer maintained.
 
 These are configured defaults, not proof of a running session's effective selections.
 Read `PERFORMANCE.md` for the reasoning and measurement limits, not on every coding task.
@@ -81,7 +81,7 @@ session; do not silently substitute models on failure.
 
 ## One-time managed-file migration
 
-The maintained source now contains **12 files**: one config fragment, eight roles,
+The maintained source now contains **11 files**: one config fragment, seven roles,
 one skill, and two references. Apply recognizes the original **version-1 receipt
 for nine files** and migrates it to version 2 without a new bootstrap or deleting
 state. The only new destinations allowed in that migration are:
@@ -96,7 +96,12 @@ file, even with identical bytes, is an ownership collision: preserve it and reco
 deliberately. Do not delete it or the receipt merely to silence the guard. New files
 are created exclusively, so a late local file cannot be overwritten.
 
-After migration all 12 files are tracked; a missing solver or reference is drift,
+The same migration retires `~/.codex/agents/research_verifier.toml`. The installed
+file must still match the version-1 receipt; missing or locally edited content blocks
+migration. Apply backs it up before removal and restores it if the migration rolls
+back. It is absent from the version-2 receipt and maintained source.
+
+After migration all 11 files are tracked; a missing solver or reference is drift,
 not permission to recreate it silently. A genuinely unmanaged installation still
 requires an explicitly prepared private baseline of every existing managed file.
 This remains a maintenance workflow, not a blank-machine installer.
@@ -132,7 +137,7 @@ For recovery, preserve newer local work first. Restore originals and the matchin
 receipt from one backup; for `absent: true` entries remove only the corresponding
 files created by that apply after confirming there is no newer work to preserve.
 Do not mix backup generations. An old version-1 receipt must have exactly its original
-nine managed files; version 2 has twelve. Do not edit receipt hashes to bypass drift.
+nine managed files; version 2 has eleven. Do not edit receipt hashes to bypass drift.
 
 A moved checkout or changed origin requires deliberate identity reconciliation.
 On ordinary drift, compare installed content, maintained source, and the recorded

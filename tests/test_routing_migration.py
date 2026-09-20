@@ -31,7 +31,8 @@ class MigrationTests(unittest.TestCase):
         for src, dest in sync.LEGACY_DESTINATIONS.items():
             target = self.home / dest
             target.parent.mkdir(parents=True, exist_ok=True)
-            data = (self.repo / src).read_bytes()
+            data = (b'name = "research_verifier"\n' if src == sync.RETIRED_SOURCE
+                    else (self.repo / src).read_bytes())
             if src.name == 'explorer.toml':
                 data = data.replace(b'model_reasoning_effort = "medium"', b'model_reasoning_effort = "high"')
             if src == sync.SOURCE_CONFIG:
@@ -44,7 +45,11 @@ class MigrationTests(unittest.TestCase):
             'version': 1,
             'repository': {k: identity[k] for k in ('root', 'origin_urls', 'branch')},
             'source_commit': identity['commit'],
-            'source_hashes': {str(src): sync.sha256_file(self.repo / src) for src in sync.LEGACY_DESTINATIONS},
+            'source_hashes': {
+                str(src): (sync.sha256_bytes(b'name = "research_verifier"\n')
+                           if src == sync.RETIRED_SOURCE else sync.sha256_file(self.repo / src))
+                for src in sync.LEGACY_DESTINATIONS
+            },
             'installed_hashes': {str(dest): sync.sha256_file(self.home / dest) for dest in sync.LEGACY_DESTINATIONS.values()},
             'managed_settings': sync.get_managed_settings(sync.read_installed_config(self.home / '.codex/config.toml')),
             'installed_at': '2026-09-20T00:00:00+00:00',
@@ -60,12 +65,14 @@ class MigrationTests(unittest.TestCase):
         plan = sync.run_plan(self.repo, self.home)
         self.assertEqual(plan['migration'], 'v1-to-v2')
         self.assertEqual(len(plan['new_files']), 3)
+        self.assertEqual(plan['removed_files'], ['.codex/agents/research_verifier.toml'])
         self.assertEqual(self.state_path.read_bytes(), self.receipt_before)
         self.assertFalse((self.home / '.agents/skills/astra-orchestrator/references').exists())
         result = sync.run_apply(self.repo, self.home, None)
         state = json.loads(self.state_path.read_text())
         self.assertEqual(state['version'], 2)
-        self.assertEqual(len(state['installed_hashes']), 12)
+        self.assertEqual(len(state['installed_hashes']), 11)
+        self.assertFalse((self.home / '.codex/agents/research_verifier.toml').exists())
         for src, dest in sync.DESTINATIONS.items():
             target = self.home / dest
             if src != sync.SOURCE_CONFIG:
@@ -188,6 +195,12 @@ class MigrationTests(unittest.TestCase):
         with self.assertRaisesRegex(sync.SyncError, 'missing file'):
             sync.run_apply(self.repo, self.home, None)
 
+    def test_retired_verifier_drift_blocks_migration(self):
+        path = self.home / '.codex/agents/research_verifier.toml'
+        path.write_bytes(path.read_bytes() + b'\nlocal drift\n')
+        with self.assertRaisesRegex(sync.SyncError, 'retired managed file changed'):
+            sync.run_apply(self.repo, self.home, None)
+
     def test_malformed_legacy_receipt_refused(self):
         state = dict(self.old)
         state['installed_hashes'] = {}
@@ -204,7 +217,7 @@ class MigrationTests(unittest.TestCase):
         with mock.patch.object(sync, 'write_atomic', side_effect=record):
             sync.run_apply(self.repo, self.home, None)
         self.assertNotIn(self.home / '.codex/config.toml', writes)
-        self.assertNotIn(self.home / '.codex/agents/research_verifier.toml', writes)
+        self.assertFalse((self.home / '.codex/agents/research_verifier.toml').exists())
 
 
 class SourceValidationTests(unittest.TestCase):
@@ -219,11 +232,11 @@ class SourceValidationTests(unittest.TestCase):
         expected = {'explorer': ('gpt-5.6-luna','medium'), 'solver': ('gpt-5.6-sol','medium'),
                     'worker': ('gpt-5.6-luna','high'), 'tester': ('gpt-5.6-luna','high'),
                     'researcher': ('gpt-5.6-luna','medium'), 'semble-search': ('gpt-5.6-luna','medium'),
-                    'reviewer': ('gpt-6-astra','low'), 'research_verifier': ('gpt-5.6-sol','high')}
+                    'reviewer': ('gpt-6-astra','low')}
         for role, pair in expected.items():
             doc = sync.parse(source[Path(f'orchestrator/agents/{role}.toml')].decode())
             self.assertEqual((doc['model'], doc['model_reasoning_effort']), pair)
-        self.assertEqual(len(source),12)
+        self.assertEqual(len(source),11)
 
     def test_invalid_effort_and_unknown_model_refused(self):
         for pair in [('gpt-6-astra','none'), ('gpt-5.6-luna','ultra'), ('made-up','high')]:
@@ -256,7 +269,7 @@ class SourceValidationTests(unittest.TestCase):
         path.write_text(json.dumps(payload))
         report = sync.run_compatibility(self.repo, path)
         self.assertEqual(report['status'], 'catalog-compatible')
-        self.assertEqual(report['checked_roles'],10)
+        self.assertEqual(report['checked_roles'],9)
         payload['models'] = [m for m in payload['models'] if m['slug'] != 'gpt-5.6-sol']
         path.write_text(json.dumps(payload))
         with self.assertRaisesRegex(sync.SyncError,'does not advertise'):

@@ -13,9 +13,9 @@ mise run orchestrator:apply
 mise run orchestrator:status
 ```
 
-Astra Low coordinates or executes directly. Luna High is the bounded worker/tester and generic fallback; Luna Medium handles bounded exploration/research/search. A Sol Medium solver handles demanding delegated work without first requiring a Luna failure. Astra Low reviews consequential changes; the separate Sol High research verifier is unchanged. Use at most three open subagents, flat unless explicitly authorized. No mandatory specialist pipeline or Fast-mode change.
+Astra Low coordinates or executes directly. Luna High is the bounded worker/tester and generic fallback; Luna Medium handles bounded exploration/research/search. A Sol Medium solver handles demanding delegated work without first requiring a Luna failure. Astra Low reviews consequential changes. Use at most three open subagents, flat unless explicitly authorized. No mandatory specialist pipeline or Fast-mode change.
 
-The source contains one config fragment, eight roles, a compact skill, and two on-demand references. The guarded version-1 to version-2 migration adds the solver and references only when their destinations are absent; existing ownership collisions stop the update. Backups, drift detection, and unrelated settings remain protected. See the maintenance guide before applying.
+The source contains one config fragment, seven roles, a compact skill, and two on-demand references. The guarded version-1 to version-2 migration adds the solver and references only when their destinations are absent, and safely retires the obsolete research verifier only when it still matches the recorded installation state; ownership collisions or drift stop the update. Backups, drift detection, and unrelated settings remain protected. See the maintenance guide before applying.
 
 `main`, inherited `profiles/`, old guides, and `setup.sh`/`setup.ps1` remain upstream reference material, **not this personal setup's installer**. Review original-project updates separately. Upstream PR #15 is not adopted.
 

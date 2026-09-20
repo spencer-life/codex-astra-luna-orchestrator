@@ -132,6 +132,9 @@ class SyncError(RuntimeError):
     """A safe, user-facing refusal or apply failure."""
 
 
+SnapshotEntry = tuple[bytes, int, int, int] | None
+
+
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -541,7 +544,7 @@ def ensure_destinations(home: Path, *, allow_missing: bool = False,
 
 def capture_destinations(destinations: dict[Path, Path], *,
                          additions: set[Path] | None = None,
-                         retirements: set[Path] | None = None) -> dict[Path, tuple[bytes, int, int, int] | None]:
+                         retirements: set[Path] | None = None) -> dict[Path, SnapshotEntry]:
     snapshot = {}
     for dest in (*destinations.values(), *(retirements or set())):
         if dest in (additions or set()) and not os.path.lexists(dest):
@@ -691,7 +694,7 @@ def build_target_bytes(
     contents: dict[Path, bytes],
     settings: dict[str, Any],
     destinations: dict[Path, Path],
-    snapshot: dict[Path, tuple[bytes, int]] | None = None,
+    snapshot: dict[Path, SnapshotEntry] | None = None,
 ) -> dict[Path, bytes]:
     targets: dict[Path, bytes] = {}
     for source, dest in destinations.items():
@@ -708,7 +711,7 @@ def make_backup(
     destinations: dict[Path, Path],
     state_path: Path,
     home: Path,
-    snapshot: dict[Path, tuple[bytes, int]],
+    snapshot: dict[Path, SnapshotEntry],
 ) -> tuple[Path, dict[str, Any]]:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     backups_dir = state_dir / "backups"
@@ -811,42 +814,60 @@ def write_new_atomic(path: Path, data: bytes, *, created: dict | None = None) ->
 
 def restore_backup(backup, manifest, home, state_path, destinations, *,
                    attempted=None, targets=None, retirements=(), created_dirs=(), created_new=None) -> None:
-    conflicts = []
+    issues = []
     for rel, info in manifest["files"].items():
         dest = home / rel
         if attempted is not None and dest not in attempted:
             continue
-        ensure_no_symlink(dest, allow_missing=True)
-        original = None if info.get("absent") else (backup / info["backup"]).read_bytes()
-        current = dest.read_bytes() if ensure_regular_file(dest, allow_missing=True) else None
-        if current == original:
-            continue
-        if original is None and created_new is not None:
-            info_now = dest.stat()
-            if created_new.get(dest) != (info_now.st_dev, info_now.st_ino):
-                conflicts.append(rel)
+        try:
+            original = None if info.get("absent") else (backup / info["backup"]).read_bytes()
+            try:
+                info_now = dest.lstat()
+            except FileNotFoundError:
+                info_now = None
+                current = None
+            else:
+                if stat.S_ISLNK(info_now.st_mode):
+                    raise SyncError("path is a symlink")
+                if not stat.S_ISREG(info_now.st_mode):
+                    raise SyncError("path is not a regular file")
+                ensure_no_symlink(dest.parent)
+                current = dest.read_bytes()
+            if current == original:
                 continue
-        # Preserve a later independent edit instead of making rollback destructive.
-        if targets is not None:
-            expected_current = None if dest in retirements else targets.get(dest)
-            if current != expected_current:
-                conflicts.append(rel)
-                continue
-        if original is None:
-            dest.unlink(missing_ok=True)
-        else:
-            write_atomic(dest, original, mode=int(info["mode"]))
-    if conflicts:
-        fail("rollback preserved conflicting local changes: " + ", ".join(conflicts))
-    if manifest.get("state"):
-        write_atomic(state_path, (backup / manifest["state"]).read_bytes(), mode=0o600)
-    elif os.path.lexists(state_path):
-        ensure_regular_file(state_path)
-        state_path.unlink()
+            if original is None and created_new is not None:
+                if info_now is None or created_new.get(dest) != (info_now.st_dev, info_now.st_ino):
+                    issues.append(f"{rel} (conflicting local change)")
+                    continue
+            # Preserve a later independent edit instead of making rollback destructive.
+            if targets is not None:
+                expected_current = None if dest in retirements else targets.get(dest)
+                if current != expected_current:
+                    issues.append(f"{rel} (conflicting local change)")
+                    continue
+            if original is None:
+                dest.unlink(missing_ok=True)
+            else:
+                write_atomic(dest, original, mode=int(info["mode"]))
+        except Exception as exc:
+            issues.append(f"{rel} ({exc})")
+
+    try:
+        if manifest.get("state"):
+            write_atomic(state_path, (backup / manifest["state"]).read_bytes(), mode=0o600)
+        elif os.path.lexists(state_path):
+            ensure_regular_file(state_path)
+            state_path.unlink()
+    except Exception as exc:
+        issues.append(f"{home_relative(state_path.relative_to(home))} ({exc})")
     for directory in reversed(created_dirs):
         # Only directories created by this attempt; never remove unrelated files.
-        with contextlib.suppress(OSError):
+        try:
             directory.rmdir()
+        except OSError as exc:
+            issues.append(f"{home_relative(directory.relative_to(home))} ({exc})")
+    if issues:
+        fail("rollback incomplete; conflicts/errors preserved: " + ", ".join(issues))
 
 
 def remove_retired_file(path: Path, expected: tuple[bytes, int, int, int]) -> None:
@@ -1003,7 +1024,10 @@ def run_apply(repo: Path, home: Path, baseline_path: str | None) -> dict[str, An
         snapshot = capture_destinations(destinations, additions=additions, retirements=retirements)
         if state is None:
             assert_baseline_unchanged(baseline, home, destinations)
-            for dest, (data, _mode) in snapshot.items():
+            for dest, entry in snapshot.items():
+                if entry is None:
+                    fail(f"managed file unexpectedly absent during bootstrap preparation: {dest}")
+                data = entry[0]
                 key = home_relative(dest.relative_to(home))
                 if sha256_bytes(data) != baseline[key]:
                     fail(f"bootstrap baseline changed during apply preparation: {dest}")

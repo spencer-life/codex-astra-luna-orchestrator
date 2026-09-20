@@ -128,9 +128,100 @@ class MigrationTests(unittest.TestCase):
         for path, data in self.before.items():
             self.assertEqual(path.read_bytes(), data)
         self.assertEqual(self.state_path.read_bytes(), self.receipt_before)
+        self.assertEqual(
+            (self.home / '.codex/agents/research_verifier.toml').read_bytes(),
+            self.before[self.home / '.codex/agents/research_verifier.toml'],
+        )
         for dest in sync.ADDED_DESTINATIONS:
             self.assertFalse((self.home / dest).exists())
         self.assertFalse((self.home / '.agents/skills/astra-orchestrator/references').exists())
+
+    def _assert_retired_collision_does_not_abort_other_restoration(self, collision):
+        worker_source = self.repo / 'orchestrator/agents/worker.toml'
+        worker_source.write_bytes(worker_source.read_bytes() + b'\n# migration rollback collision\n')
+        self.git('add', 'orchestrator/agents/worker.toml')
+        self.git('commit', '-m', 'fix(orchestrator): exercise migration rollback collision')
+        worker_dest = self.home / '.codex/agents/worker.toml'
+        worker_before = worker_dest.read_bytes()
+        verifier = self.home / '.codex/agents/research_verifier.toml'
+        outside = Path(self.tmp.name) / f'collision-{collision}'
+        outside.mkdir()
+        original = sync.write_atomic
+        failed = False
+
+        def fail_receipt(path, data, *, mode=None):
+            nonlocal failed
+            if path == self.state_path and not failed:
+                failed = True
+                if collision == 'symlink':
+                    verifier.symlink_to(outside, target_is_directory=True)
+                else:
+                    verifier.mkdir()
+                raise OSError('simulated receipt failure')
+            return original(path, data, mode=mode)
+
+        with mock.patch.object(sync, 'write_atomic', side_effect=fail_receipt):
+            with self.assertRaisesRegex(sync.SyncError, 'rollback.*conflict'):
+                sync.run_apply(self.repo, self.home, None)
+        self.assertEqual(worker_dest.read_bytes(), worker_before)
+        self.assertEqual(self.state_path.read_bytes(), self.receipt_before)
+        if collision == 'symlink':
+            self.assertTrue(verifier.is_symlink())
+            self.assertEqual(verifier.resolve(), outside)
+        else:
+            self.assertTrue(verifier.is_dir())
+
+    def test_rollback_continues_after_retired_verifier_symlink_collision(self):
+        self._assert_retired_collision_does_not_abort_other_restoration('symlink')
+
+    def test_rollback_continues_after_retired_verifier_directory_collision(self):
+        self._assert_retired_collision_does_not_abort_other_restoration('directory')
+
+    def test_rollback_continues_after_solver_collision_and_restores_later_files(self):
+        worker_source = self.repo / 'orchestrator/agents/worker.toml'
+        worker_source.write_bytes(worker_source.read_bytes() + b'\n# solver rollback collision\n')
+        self.git('add', 'orchestrator/agents/worker.toml')
+        self.git('commit', '-m', 'fix(orchestrator): exercise solver rollback collision')
+        worker_dest = self.home / '.codex/agents/worker.toml'
+        worker_before = worker_dest.read_bytes()
+        verifier = self.home / '.codex/agents/research_verifier.toml'
+        verifier_before = verifier.read_bytes()
+        solver = self.home / sync.DESTINATIONS[Path('orchestrator/agents/solver.toml')]
+        outside = Path(self.tmp.name) / 'solver-collision'
+        outside.mkdir()
+        original = sync.write_atomic
+
+        for collision in ('symlink', 'directory'):
+            with self.subTest(collision=collision):
+                failed = False
+
+                def fail_receipt(path, data, *, mode=None):
+                    nonlocal failed
+                    if path == self.state_path and not failed:
+                        failed = True
+                        solver.unlink()
+                        if collision == 'symlink':
+                            solver.symlink_to(outside, target_is_directory=True)
+                        else:
+                            solver.mkdir()
+                        raise OSError('simulated receipt failure')
+                    return original(path, data, mode=mode)
+
+                with mock.patch.object(sync, 'write_atomic', side_effect=fail_receipt):
+                    with self.assertRaisesRegex(sync.SyncError, 'rollback.*conflict'):
+                        sync.run_apply(self.repo, self.home, None)
+                self.assertEqual(worker_dest.read_bytes(), worker_before)
+                self.assertEqual(verifier.read_bytes(), verifier_before)
+                self.assertEqual(self.state_path.read_bytes(), self.receipt_before)
+                self.assertFalse((self.home / '.agents/skills/astra-orchestrator/references/maintenance.md').exists())
+                self.assertFalse((self.home / '.agents/skills/astra-orchestrator/references/semble.md').exists())
+                if collision == 'symlink':
+                    self.assertTrue(solver.is_symlink())
+                    self.assertEqual(solver.resolve(), outside)
+                    solver.unlink()
+                else:
+                    self.assertTrue(solver.is_dir())
+                    solver.rmdir()
 
     def test_target_appearing_during_backup_is_preserved(self):
         original = sync.make_backup
@@ -200,6 +291,13 @@ class MigrationTests(unittest.TestCase):
         path.write_bytes(path.read_bytes() + b'\nlocal drift\n')
         with self.assertRaisesRegex(sync.SyncError, 'retired managed file changed'):
             sync.run_apply(self.repo, self.home, None)
+
+    def test_missing_retired_verifier_blocks_migration(self):
+        path = self.home / '.codex/agents/research_verifier.toml'
+        path.unlink()
+        with self.assertRaisesRegex(sync.SyncError, 'missing file'):
+            sync.run_apply(self.repo, self.home, None)
+        self.assertEqual(self.state_path.read_bytes(), self.receipt_before)
 
     def test_malformed_legacy_receipt_refused(self):
         state = dict(self.old)

@@ -37,6 +37,87 @@ USAGE_KEYS = (
 )
 
 
+RATE_CARD = {
+    "checked": "2026-09-20",
+    "source": "https://learn.chatgpt.com/docs/pricing",
+    "unit": "Standard-rate credit equivalent per million tokens",
+    "note": "Comparison baseline only, irrespective of observed tier. Not an actual charge, current live quote, or included-plan allowance conversion. No Fast multiplier, promotions, tools, or long-context adjustments applied.",
+}
+STANDARD_RATES = {
+    "gpt-6-astra": (250, 25, 1250),
+    "gpt-5.6-sol": (100, 10, 500),
+    "gpt-5.6": (100, 10, 500),
+    "gpt-5.6-terra": (50, 5, 300),
+    "gpt-5.6-luna": (5, 0.5, 30),
+}
+
+
+def standard_equivalent(model: str, usage: dict) -> float | None:
+    rates = STANDARD_RATES.get(model)
+    values = [usage.get(k) for k in ("input_tokens", "cached_input_tokens", "output_tokens")]
+    if rates is None or any(type(v) is not int or v < 0 for v in values):
+        return None
+    inp, cached, output = values
+    if cached > inp:
+        return None
+    return ((inp - cached) * rates[0] + cached * rates[1] + output * rates[2]) / 1_000_000
+
+
+def empty_metrics() -> dict:
+    return {"responses": 0, "input_samples": 0, "input_sum": 0,
+            "min_input": None, "max_input": None, "known_standard_equivalent": 0.0,
+            "unpriced_responses": 0, "requested_service_tiers": set(),
+            "recorded_response_service_tiers": set()}
+
+
+def tier_label(value) -> str:
+    return value if isinstance(value, str) and value.strip() else "unknown"
+
+
+def record_metrics(target: dict, model: str, usage: dict, request_tier, record_tier) -> None:
+    target["responses"] += 1
+    value = usage.get("input_tokens")
+    if type(value) is int and value >= 0:
+        target["input_samples"] += 1
+        target["input_sum"] += value
+        target["min_input"] = value if target["min_input"] is None else min(target["min_input"], value)
+        target["max_input"] = value if target["max_input"] is None else max(target["max_input"], value)
+    target["requested_service_tiers"].add(tier_label(request_tier))
+    target["recorded_response_service_tiers"].add(tier_label(record_tier))
+    estimate = standard_equivalent(model, usage)
+    if estimate is None:
+        target["unpriced_responses"] += 1
+    else:
+        target["known_standard_equivalent"] += estimate
+
+
+def finish_metrics(metrics: dict) -> dict:
+    result = dict(metrics)
+    count = metrics["input_samples"]
+    result["mean_input"] = metrics["input_sum"] / count if count else None
+    result["known_standard_equivalent"] = round(metrics["known_standard_equivalent"], 6)
+    result["standard_equivalent"] = (result["known_standard_equivalent"]
+                                      if not metrics["unpriced_responses"] else None)
+    for key in ("requested_service_tiers", "recorded_response_service_tiers"):
+        result[key] = sorted(result[key])
+    return result
+
+
+def credit_summary(threads: list[dict]) -> dict:
+    known = 0.0
+    unpriced = 0
+    unavailable = 0
+    for thread in threads:
+        if thread["usage_source"] != "per-response":
+            unavailable += 1
+        for value in thread.get("response_metrics", {}).values():
+            known += value["known_standard_equivalent"]
+            unpriced += value["unpriced_responses"]
+    return {"known_standard_equivalent": round(known, 6),
+            "complete_standard_equivalent": round(known, 6) if not unpriced and not unavailable else None,
+            "unpriced_responses": unpriced, "threads_with_unavailable_response_usage": unavailable}
+
+
 def empty_usage() -> dict[str, int]:
     return {k: 0 for k in USAGE_KEYS}
 
@@ -122,6 +203,8 @@ def analyze_thread(
     per_model: dict[str, dict[str, int]] = defaultdict(empty_usage)
     responses: dict[str, int] = defaultdict(int)
     efforts: dict[str, set[str]] = defaultdict(set)
+    metrics: dict[str, dict] = defaultdict(empty_metrics)
+    request_tier = None
     model = None
     effort = None
     first_ts = parse_ts(meta.get("timestamp"))
@@ -149,6 +232,7 @@ def analyze_thread(
                 # Missing effort on a model switch must not inherit another model's setting.
                 effort = payload.get("effort") or (effort if next_model == model else None)
                 model = next_model
+                request_tier = payload.get("service_tier")
             elif kind == "token_usage_record" or (
                 kind == "event_msg" and payload.get("type") == "token_usage_record"
             ):
@@ -162,6 +246,7 @@ def analyze_thread(
                 add_usage(per_model[key], usage)
                 responses[key] += 1
                 efforts[key].add(effort or "unknown")
+                record_metrics(metrics[key], key, usage, request_tier, payload.get("service_tier"))
                 if ts is None:
                     warnings.append("Usage records lack timezone-aware timestamps; full-session counts only.")
             elif kind == "event_msg" and payload.get("type") == "token_count":
@@ -204,6 +289,7 @@ def analyze_thread(
         "ended": last_ts,
         "per_model": dict(per_model),
         "responses": dict(responses),
+        "response_metrics": {key: finish_metrics(value) for key, value in metrics.items()},
         "usage_source": usage_source,
         "warnings": sorted(set(warnings)),
         "cumulative_total": last_total if since is None else None,
@@ -299,6 +385,10 @@ def measurement(threads: list[dict], include_guardian: bool, since=None, until=N
         "counted_usage": usage_totals(counted),
         "excluded_auto_review_usage": usage_totals(excluded),
         "all_recorded_usage": usage_totals(threads),
+        "rate_card": RATE_CARD,
+        "rate_weighted_usage": {"counted": credit_summary(counted),
+                                "excluded_auto_review": credit_summary(excluded),
+                                "all_recorded": credit_summary(threads)},
         "notes": [
             "Intervals and thread spans include inactivity and overlap; they are not compute time.",
             "Reasoning tokens are included in output, not additional to output or total.",
@@ -306,6 +396,9 @@ def measurement(threads: list[dict], include_guardian: bool, since=None, until=N
             "Timestamp selection counts whole response records; it does not prorate boundary-crossing calls.",
             "Only discovered files and available usage records are counted; private reports are not for publication.",
             "Top-level thread model/effort is last observed metadata; per-model efforts describe counted responses.",
+            "Requested tiers come from turn_context; response tiers only from usage-record metadata. Missing fields stay unknown; neither inferred from the root nor from speed.",
+            "Mean/min/max input describe available per-response token counters, not unique context or reasoning. Unknown samples are excluded and sample counts are shown.",
+            RATE_CARD["note"],
         ],
     }
 
@@ -408,6 +501,23 @@ def render_markdown(root_id: str, threads: list[dict], include_guardian: bool, s
         lines.append(f"| {name} | {fmt_int(u['input_tokens'] - u['cached_input_tokens'])} | "
                      f"{fmt_int(u['cached_input_tokens'])} | {fmt_int(u['output_tokens'])} | "
                      f"{fmt_int(u['reasoning_output_tokens'])} | {fmt_int(u['total_tokens'])} |")
+    lines.extend([
+        "", "| Thread / model | Input samples | Mean input | Min input | Max input | Requested tiers | Response-record tiers | Standard credit equivalent |",
+        "|---|---:|---:|---:|---:|---|---|---:|",
+    ])
+    for thread in counted:
+        for model, details in thread.get("response_metrics", {}).items():
+            def number(value):
+                return "unknown" if value is None else f"{value:,.2f}"
+            lines.append(f"| `{thread['id'][:8]}` / {model} | {details['input_samples']}/{details['responses']} | "
+                         f"{number(details['mean_input'])} | {number(details['min_input'])} | {number(details['max_input'])} | "
+                         f"{', '.join(details['requested_service_tiers'])} | {', '.join(details['recorded_response_service_tiers'])} | "
+                         f"{number(details['standard_equivalent'])} |")
+    weighted = report["rate_weighted_usage"]["counted"]
+    lines.append(f"Standard-rate equivalent (rates checked {RATE_CARD['checked']}): known subtotal "
+                 f"{weighted['known_standard_equivalent']:.6f}; unpriced responses "
+                 f"{weighted['unpriced_responses']}; unavailable-usage threads "
+                 f"{weighted['threads_with_unavailable_response_usage']}. Not an actual charge.")
     lines.extend(f"- {note}" for note in report["notes"])
     for t in threads:
         lines.extend(f"- Thread `{t['id'][:8]}`: {note}" for note in t["warnings"])

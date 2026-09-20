@@ -2,7 +2,7 @@
 uv = "0.12.13"
 
 [tasks."orchestrator:validate"]
-description = "Validate the committed orchestrator source"
+description = "Validate source, skill references, and documented model/effort pairs"
 run = "uv run --script scripts/orchestrator_sync.py validate"
 
 [tasks."orchestrator:plan"]
@@ -22,9 +22,13 @@ description = "Fast-forward the committed personal branch from the fork"
 run = "uv run --script scripts/orchestrator_sync.py sync"
 
 [tasks."orchestrator:test"]
-description = "Run the guarded sync workflow tests"
-run = "uv run --with pytest --with tomlkit==0.15.1 python -m pytest tests/test_orchestrator_sync.py tests/test_token_usage.py"
+description = "Test guarded apply, receipt migration, validation, and usage reporting"
+run = "uv run --with pytest --with tomlkit==0.15.1 --with PyYAML==6.0.3 python -m pytest tests/test_orchestrator_sync.py tests/test_token_usage.py tests/test_routing_migration.py tests/test_usage_metrics.py"
 
 [tasks."orchestrator:usage"]
-description = "Report recorded Codex usage with explicit scope and window labels"
+description = "Report recorded usage, input sizes, tiers, and Standard-rate equivalents"
 run = "uv run --no-project python scripts/token_usage.py"
+
+[tasks."orchestrator:compatibility"]
+description = "Check selections against a supplied local catalog; not a runtime invocation"
+run = "uv run --script scripts/orchestrator_sync.py compatibility"

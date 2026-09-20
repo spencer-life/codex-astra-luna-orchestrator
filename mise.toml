@@ -24,3 +24,7 @@ run = "uv run --script scripts/orchestrator_sync.py sync"
 [tasks."orchestrator:test"]
 description = "Run the guarded sync workflow tests"
 run = "uv run --with pytest --with tomlkit==0.15.1 python -m pytest tests/test_orchestrator_sync.py tests/test_token_usage.py"
+
+[tasks."orchestrator:usage"]
+description = "Report recorded Codex usage with explicit scope and window labels"
+run = "uv run --no-project python scripts/token_usage.py"

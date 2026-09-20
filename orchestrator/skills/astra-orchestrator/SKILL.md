@@ -123,11 +123,18 @@ key enforces them. Do not spawn three agents merely because capacity exists.
 
 Spawn independent work before waiting, within the available capacity. Start
 dependent work only when its prerequisites are ready. Reuse relevant findings
-rather than restarting discovery in every role.
+rather than restarting discovery in every role. For review, give the reviewer a
+stable scoped change and existing validation evidence. A reviewer returns its
+findings and ends its turn; the root resumes it with the ready delta when fixes
+need review. Do not leave reviewers polling a writer for progress. If an early
+design review is useful, assign that bounded question separately from final
+review.
 
 Keep returns concise: conclusions, relevant paths and symbols, changes made,
-commands and results, risks, and blockers. Avoid large raw logs or entire files
-when focused evidence is sufficient.
+commands and results, risks, and blockers. Return focused evidence rather than
+large raw logs or entire files; preserve errors and enough context to verify a
+claim. Share a corrected invocation or environment blocker promptly so other
+agents do not repeat the same diagnosis.
 
 Use supported waiting and completion mechanisms. While agents run, do genuinely
 independent root work or wait for the next required result. Avoid frequent
@@ -136,10 +143,21 @@ eliminate runtime-controlled wake-ups.
 
 ## Verification, failures, and cleanup
 
-Tie verification to the actual code state and relevant environment. Reuse valid
-evidence when neither has materially changed. Rerun affected checks after fixes
-or integration invalidate earlier results. Do not rerun identical checks in
-every role without a reason, or present stale results as final verification.
+Assign one owner for each routine check. Its evidence includes the exact command,
+result, relevant environment, and tested code state (including uncommitted changes;
+HEAD alone is insufficient for a dirty tree). Share this concise record with the
+root and reviewer. Reuse it while the relevant source, tests, command, dependencies,
+configuration, and environment remain unchanged. Rerun affected checks after a
+relevant change or failure, an unresolved concern, or a deliberately assigned
+independent check. Keep independent final verification for consequential changes;
+avoid accidental repetition, not necessary evidence.
+
+When implementation depends on a parser, runtime, or configuration assumption,
+validate that assumption early with a focused read-only probe of the real local
+environment where available. Do not apply unfinished changes as a probe or expose
+private configuration. When access is unavailable, state that limitation and use
+a representative fixture without claiming it proves local compatibility. This is
+not a mandatory whole-environment audit for ordinary edits.
 
 If spawning or a subagent fails, inspect the reason and report it. Retry,
 narrow, or reassign when useful. A disclosed safe root fallback is allowed

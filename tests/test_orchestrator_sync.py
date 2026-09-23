@@ -47,17 +47,23 @@ class OrchestratorSyncTests(unittest.TestCase):
 
     def _write_installed_files(self):
         config = '''# local setting preserved by apply
-model = "gpt-6-astra"
-model_reasoning_effort = "low"
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
 model_verbosity = "low"
+default_permissions = "workspace-tools"
+
+[features.context_management]
+experimental_mode = true
 
 [agents]
 enabled = true
-max_concurrent_threads_per_session = 3
-max_depth = 1
-default_subagent_model = "gpt-5.6-luna"
+max_concurrent_threads_per_session = 4
+default_subagent_model = "gpt-6-luna"
 default_subagent_reasoning_effort = "high"
 interrupt_message = true
+
+[permissions.workspace-tools]
+description = "local"
 
 [local]
 keep = "here"
@@ -84,6 +90,9 @@ keep = "here"
         result = SYNC.run_apply(self.repo, self.home, str(self._baseline()))
         self.assertEqual(result["status"], "applied")
         self.assertEqual((self.home / ".codex/config.toml").read_bytes(), config_before)
+        config = SYNC.read_installed_config(self.home / ".codex/config.toml")
+        self.assertEqual(config["default_permissions"], "workspace-tools")
+        self.assertEqual(config["permissions"]["workspace-tools"]["description"], "local")
         state_before = (self.home / ".local/state/astra-orchestrator/state.json").read_bytes()
         result = SYNC.run_apply(self.repo, self.home, None)
         self.assertEqual(result["status"], "already-applied")
@@ -156,6 +165,27 @@ keep = "here"
         with self.assertRaisesRegex(SYNC.SyncError, "committed HEAD"):
             SYNC.assert_source_matches_commit(self.repo, commit, changed)
 
+    def test_context_management_is_managed_but_permissions_are_not(self):
+        SYNC.run_apply(self.repo, self.home, str(self._baseline()))
+        config = self.home / ".codex/config.toml"
+        text = config.read_text(encoding="utf-8")
+        config.write_text(
+            text.replace("experimental_mode = true", "experimental_mode = false"),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(SYNC.SyncError, "managed settings"):
+            SYNC.run_apply(self.repo, self.home, None)
+
+        config.write_text(text.replace('description = "local"', 'description = "changed locally"'), encoding="utf-8")
+        worker = self.repo / "orchestrator/agents/worker.toml"
+        worker.write_text(worker.read_text(encoding="utf-8") + "\n# permission preservation\n", encoding="utf-8")
+        self._git("add", "orchestrator/agents/worker.toml")
+        self._git("commit", "-m", "fix(orchestrator): test permission preservation")
+        result = SYNC.run_apply(self.repo, self.home, None)
+        self.assertEqual(result["status"], "applied")
+        updated = SYNC.read_installed_config(config)
+        self.assertEqual(updated["permissions"]["workspace-tools"]["description"], "changed locally")
+
     def test_interspersed_repeated_array_tables_parse(self):
         config = b'''model = "gpt-6-astra"
 model_reasoning_effort = "low"
@@ -179,7 +209,7 @@ path = "~/.agents/skills/two/SKILL.md"
 enabled = false
 '''
         document = SYNC.parse_config_bytes(config, Path("config.toml"))
-        self.assertEqual(SYNC.get_managed_settings(document)["agents"]["max_depth"], 1)
+        self.assertEqual(SYNC.get_managed_settings(document, version=2)["agents"]["max_depth"], 1)
 
     def test_edit_during_backup_is_preserved_and_apply_stops(self):
         SYNC.run_apply(self.repo, self.home, str(self._baseline()))

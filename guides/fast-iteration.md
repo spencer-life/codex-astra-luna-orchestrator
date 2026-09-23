@@ -1,21 +1,11 @@
-# Fast Iteration
+# Fast iteration
 
-Choose this preset when latency matters and you want Astra to orchestrate
-quickly with Luna subagents.
+For latency-sensitive work, prefer a **GPT-6 Luna** root selected in the model picker.
+Luna Medium is a good starting point for coordinated edits; Luna Low fits very small,
+well-bounded work.
 
-Start with the [Pro profile](full-orchestration.md). This optional root
-preset keeps Astra `medium`; the installed Luna roles remain at `max` and
-the Astra reviewer at `low`. For a Luna root, use the [Plus profile](plus-plan.md).
+Fast mode is an independent service-tier choice and is not pinned by this repository.
+Current GPT-6 Fast usage is charged at a higher Codex credit multiplier, so enable it
+per session only when latency is worth the extra usage.
 
-Add or merge this into:
-
-`~/.codex/config.toml`
-
-```toml
-model = "gpt-6-astra"
-model_reasoning_effort = "medium"
-service_tier = "fast"
-```
-
-If your Codex version does not support `service_tier`, remove that line and
-keep the model and reasoning settings.
+The orchestration skill respects the active session model and service-tier choice.

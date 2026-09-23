@@ -1,22 +1,53 @@
-# Personal Astra orchestrator
+# Personal Codex orchestrator
 
-The maintained setup is on the [`personal` branch](https://github.com/spencer-life/codex-astra-luna-orchestrator/tree/personal), in [`orchestrator/`](orchestrator/). Installed Codex files are applied copies, not a competing source.
+The maintained setup is on the
+[`personal` branch](https://github.com/spencer-life/codex-astra-luna-orchestrator/tree/personal),
+with installable source under [`orchestrator/`](orchestrator/). Installed Codex
+files are applied copies, not a competing source.
 
-**ChatGPT and Codex: edit the same maintained files, validate, review, commit, then apply.** Read [PERSONAL.md](PERSONAL.md) for the guarded workflow, migration, and recovery; [PERFORMANCE.md](PERFORMANCE.md) explains routing and metrics.
+**ChatGPT and Codex: edit the same maintained files, validate, review, commit, then
+apply.** Read [PERSONAL.md](PERSONAL.md) for the guarded workflow and recovery.
+[PERFORMANCE.md](PERFORMANCE.md) records the current routing and measurement basis.
 
 ```sh
 mise run orchestrator:validate
 mise run orchestrator:test
+mise run orchestrator:compatibility --model-catalog /path/to/current-model-catalog.json
 mise run orchestrator:plan
-# After review and commit on personal:
+# After review and merge/commit on personal:
 mise run orchestrator:apply
 mise run orchestrator:status
 ```
 
-Astra Low coordinates or executes directly. Luna High is the bounded worker/tester and generic fallback; Luna Medium handles bounded exploration/research/search. A Sol Medium solver handles demanding delegated work without first requiring a Luna failure. Astra Low reviews consequential changes. Use at most three open subagents, flat unless explicitly authorized. No mandatory specialist pipeline or Fast-mode change.
+The default root is GPT-6 Sol at medium reasoning. A model or effort selected in the
+Codex picker/CLI remains the active root for that session, so a Luna-only session is
+supported without rewriting the shared configuration. Explorer/researcher use GPT-6
+Luna Medium; worker/tester and generic fallback use GPT-6 Luna High; the independent
+read-only reviewer uses GPT-6 Sol Medium. Spawned concurrency is capped at four.
 
-The source contains one config fragment, seven roles, a compact skill, and two on-demand references. The guarded version-1 to version-2 migration adds the solver and references only when their destinations are absent, and safely retires the obsolete research verifier only when it still matches the recorded installation state; ownership collisions or drift stop the update. Backups, drift detection, and unrelated settings remain protected. See the maintenance guide before applying.
+Semble is used directly through its installed MCP/CLI rather than through a dedicated
+subagent. The maintained configuration enables experimental context management.
+`max_depth` is no longer managed because current Codex V2 ignores that V1-only
+setting.
 
-`main`, inherited `profiles/`, old guides, and `setup.sh`/`setup.ps1` remain upstream reference material, **not this personal setup's installer**. Review original-project updates separately. Upstream PR #15 is not adopted.
+The v3 maintained source contains **nine files**: one config fragment, five role files,
+one routing skill, and two on-demand references. Guarded migration supports both v1
+and v2 receipts, retiring obsolete roles and the previously managed `max_depth`
+without overwriting unrelated local configuration.
 
-Credentials, full machine configuration, MCP/app settings, sessions, private reports, receipts, and backups stay local. Original project: [donvito/codex-astra-luna-orchestrator](https://github.com/donvito/codex-astra-luna-orchestrator). Licensed under [Apache 2.0](LICENSE).
+The repository deliberately does **not** own the full `~/.codex/config.toml`.
+Workspace Tools permission profiles, Auto-review/approval choices, MCPs/plugins,
+service tier, audio devices, voice selection, desktop preferences, credentials, and
+machine-specific settings stay local.
+
+Codex CLI 0.156.0 is the compatibility target for this migration. Voice conversations
+are enabled by default in that release; no portable voice flag is required here.
+Machine-local audio and realtime preferences remain outside the managed fragment.
+
+The skill's filesystem path and frontmatter name remain `astra-orchestrator` for
+installation compatibility, while its user-facing heading is **Codex Orchestrator**.
+
+`main`, inherited `profiles/`, and `setup.sh`/`setup.ps1` remain upstream
+reference material rather than the personal apply path. Original project:
+[donvito/codex-astra-luna-orchestrator](https://github.com/donvito/codex-astra-luna-orchestrator).
+Licensed under [Apache 2.0](LICENSE).

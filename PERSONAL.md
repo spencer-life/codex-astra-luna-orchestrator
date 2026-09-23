@@ -62,11 +62,12 @@ profiles such as Workspace Tools, Auto-review/approval configuration, MCP/plugin
 settings, service tier, or sandbox policy outside the role-specific restrictions.
 The merge/apply path preserves them.
 
-Codex CLI **0.156.0** is the compatibility target checked for this migration. Voice
-conversations are enabled by default there, with F8 and `/voice settings`. The
-current config schema describes `[audio]` device choices as machine-local and the
-broader `[realtime]` section as experimental, so neither is added to this public
-managed fragment. Let Codex persist those local preferences.
+This v3 setup was validated with Codex CLI **0.156.1**, whose local catalog
+advertised the configured GPT-6 Sol/Luna model and effort pairs. For future changes,
+use a current compatible stable Codex release and check its local catalog; 0.156.1 is
+the recorded validation version, not a permanent latest-version requirement. Audio
+device and realtime preferences remain machine-local and are not added to this
+managed fragment.
 
 ## Review, commit, and apply
 
@@ -84,6 +85,12 @@ mise run orchestrator:apply
 mise run orchestrator:status
 git push origin personal
 ```
+
+Before choosing a checkout for sync, apply, or recovery, inspect the installed
+receipt/state and use its recorded source root. Do not rewrite that identity to move
+between duplicate checkouts or apply from a conflicting worktree. Preserve unique
+local work before reconciling or resetting the receipt-bound checkout; see the
+maintenance reference for the recovery procedure.
 
 `sync` fast-forwards only from this fork's `personal` branch. It does not install
 an unmerged PR. For remote candidates, review and test their branch first, then merge

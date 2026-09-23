@@ -7,6 +7,8 @@ Read `PERSONAL.md` before changing or applying it. ChatGPT and Codex must edit
 the same repository files, validate, review, and commit before applying with
 `mise run orchestrator:apply`. Never reconstruct the skill from a prompt or
 silently overwrite an edited installed copy.
+Before apply or recovery, inspect the installed receipt and follow the
+receipt-bound checkout guidance in `PERSONAL.md` and the maintenance reference.
 
 Keep `main` as upstream reference. Do not merge personal changes into `main`,
 automatically install upstream templates, or adopt upstream PR #15. Inherited

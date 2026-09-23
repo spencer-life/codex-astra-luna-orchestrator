@@ -3,7 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["tomlkit==0.15.1", "PyYAML==6.0.3"]
 # ///
-"""Validate and apply the maintained Astra orchestrator source.
+"""Validate and apply the maintained Codex orchestrator source.
 
 The repository owns the orchestrator files under ``orchestrator/``.  This
 script applies the role files, skill, and references byte-for-byte, and merges
@@ -48,7 +48,7 @@ V1_ROLE_NAMES = (
     "semble-search",
     "research_verifier",
 )
-ROLE_NAMES = (
+V2_ROLE_NAMES = (
     "explorer",
     "worker",
     "tester",
@@ -56,6 +56,13 @@ ROLE_NAMES = (
     "reviewer",
     "semble-search",
     "solver",
+)
+ROLE_NAMES = (
+    "explorer",
+    "worker",
+    "tester",
+    "researcher",
+    "reviewer",
 )
 SKILL_PATH = Path("orchestrator/skills/astra-orchestrator/SKILL.md")
 REFERENCE_NAMES = ("maintenance.md", "semble.md")
@@ -67,11 +74,19 @@ SOURCE_FILES = (
     *REFERENCE_FILES,
 )
 
-ROOT_KEYS = {"model", "model_reasoning_effort", "agents"}
-AGENT_KEYS = {
+ROOT_KEYS = {"model", "model_reasoning_effort", "features", "agents"}
+FEATURE_KEYS = {"context_management"}
+CONTEXT_MANAGEMENT_KEYS = {"experimental_mode"}
+LEGACY_AGENT_KEYS = {
     "enabled",
     "max_concurrent_threads_per_session",
     "max_depth",
+    "default_subagent_model",
+    "default_subagent_reasoning_effort",
+}
+AGENT_KEYS = {
+    "enabled",
+    "max_concurrent_threads_per_session",
     "default_subagent_model",
     "default_subagent_reasoning_effort",
 }
@@ -89,17 +104,13 @@ DESTINATIONS = {
         Path("orchestrator/agents") / f"{name}.toml": Path(".codex/agents") / f"{name}.toml"
         for name in ROLE_NAMES
     },
-    Path("orchestrator/skills/astra-orchestrator/SKILL.md"): Path(
-        ".agents/skills/astra-orchestrator/SKILL.md"
-    ),
+    SKILL_PATH: Path(".agents/skills/astra-orchestrator/SKILL.md"),
 }
-DESTINATIONS.update({path: Path(".agents/skills/astra-orchestrator/references") / path.name
-                     for path in REFERENCE_FILES})
-ADDED_SOURCES = {Path("orchestrator/agents/solver.toml"), *REFERENCE_FILES}
-ADDED_DESTINATIONS = {DESTINATIONS[path] for path in ADDED_SOURCES}
-RETIRED_SOURCE = Path("orchestrator/agents/research_verifier.toml")
-RETIRED_DESTINATIONS = {Path(".codex/agents/research_verifier.toml")}
-LEGACY_DESTINATIONS = {
+DESTINATIONS.update({
+    path: Path(".agents/skills/astra-orchestrator/references") / path.name
+    for path in REFERENCE_FILES
+})
+V1_DESTINATIONS = {
     SOURCE_CONFIG: Path(".codex/config.toml"),
     **{
         Path("orchestrator/agents") / f"{name}.toml": Path(".codex/agents") / f"{name}.toml"
@@ -107,16 +118,43 @@ LEGACY_DESTINATIONS = {
     },
     SKILL_PATH: Path(".agents/skills/astra-orchestrator/SKILL.md"),
 }
-STATE_VERSION = 2
+V2_DESTINATIONS = {
+    SOURCE_CONFIG: Path(".codex/config.toml"),
+    **{
+        Path("orchestrator/agents") / f"{name}.toml": Path(".codex/agents") / f"{name}.toml"
+        for name in V2_ROLE_NAMES
+    },
+    SKILL_PATH: Path(".agents/skills/astra-orchestrator/SKILL.md"),
+}
+V2_DESTINATIONS.update({
+    path: Path(".agents/skills/astra-orchestrator/references") / path.name
+    for path in REFERENCE_FILES
+})
+DESTINATIONS_BY_VERSION = {1: V1_DESTINATIONS, 2: V2_DESTINATIONS, 3: DESTINATIONS}
+V1_ADDED_SOURCES = set(REFERENCE_FILES)
+MIGRATION_RETIREMENTS = {
+    1: {
+        Path(".codex/agents/research_verifier.toml"),
+        Path(".codex/agents/semble-search.toml"),
+    },
+    2: {
+        Path(".codex/agents/solver.toml"),
+        Path(".codex/agents/semble-search.toml"),
+    },
+}
+STATE_VERSION = 3
 # Documentation snapshot, not an assertion about any account's live availability.
-# https://developers.openai.com/api/docs/models/gpt-6-astra
-# https://developers.openai.com/api/docs/models/gpt-5.6-{sol,luna,terra}
-MODEL_SUPPORT_CHECKED = "2026-09-20"
+# https://developers.openai.com/api/docs/models/gpt-6-{astra,sol,luna}
+MODEL_SUPPORT_CHECKED = "2026-09-22"
 REASONING_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 MODEL_EFFORTS = {
     "gpt-6-astra": REASONING_EFFORTS,
-    **{name: REASONING_EFFORTS | {"none"} for name in
-       ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")},
+    "gpt-6-sol": REASONING_EFFORTS | {"none"},
+    "gpt-6-luna": REASONING_EFFORTS | {"none"},
+    **{
+        name: REASONING_EFFORTS | {"none"}
+        for name in ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+    },
 }
 
 SECRET_PATTERNS = (
@@ -284,9 +322,6 @@ def validate_skill(contents: dict[Path, bytes]) -> None:
         for path in REFERENCE_FILES:
             if not contents[path].strip() or f"references/{path.name}" not in text:
                 fail(f"empty or unlinked skill reference: {path.name}")
-        semble = contents[Path("orchestrator/agents/semble-search.toml")].decode("utf-8")
-        if "~/.agents/skills/astra-orchestrator/references/semble.md" not in semble:
-            fail("Semble role must point to its installed reference")
     except (UnicodeError, ValueError, yaml.YAMLError) as exc:
         fail(f"invalid skill frontmatter: {exc}")
 
@@ -347,6 +382,25 @@ def parse_source_config(data: bytes) -> dict[str, Any]:
     top = set(doc.keys())
     if top != ROOT_KEYS:
         fail(f"{SOURCE_CONFIG} must contain exactly {sorted(ROOT_KEYS)}, found {sorted(top)}")
+
+    features = doc.get("features")
+    if not isinstance(features, dict) or set(features.keys()) != FEATURE_KEYS:
+        found = sorted(features.keys()) if isinstance(features, dict) else type(features).__name__
+        fail(f"[features] must contain exactly {sorted(FEATURE_KEYS)}, found {found}")
+    context_management = features.get("context_management")
+    if not isinstance(context_management, dict) or set(context_management.keys()) != CONTEXT_MANAGEMENT_KEYS:
+        found = (
+            sorted(context_management.keys())
+            if isinstance(context_management, dict)
+            else type(context_management).__name__
+        )
+        fail(
+            "[features.context_management] must contain exactly "
+            f"{sorted(CONTEXT_MANAGEMENT_KEYS)}, found {found}"
+        )
+    if not isinstance(context_management["experimental_mode"], bool):
+        fail("features.context_management.experimental_mode must be boolean")
+
     agents = doc.get("agents")
     if not isinstance(agents, dict) or set(agents.keys()) != AGENT_KEYS:
         found = sorted(agents.keys()) if isinstance(agents, dict) else type(agents).__name__
@@ -357,19 +411,28 @@ def parse_source_config(data: bytes) -> dict[str, Any]:
         fail("model_reasoning_effort must be a non-empty string")
     if not isinstance(agents["enabled"], bool):
         fail("agents.enabled must be boolean")
-    for key in ("max_concurrent_threads_per_session", "max_depth"):
-        if not isinstance(agents[key], int) or isinstance(agents[key], bool) or agents[key] < 0:
-            fail(f"agents.{key} must be a non-negative integer")
-    if agents["max_concurrent_threads_per_session"] < 1:
+    if (
+        not isinstance(agents["max_concurrent_threads_per_session"], int)
+        or isinstance(agents["max_concurrent_threads_per_session"], bool)
+        or agents["max_concurrent_threads_per_session"] < 1
+    ):
         fail("agents.max_concurrent_threads_per_session must be at least 1")
     for key in ("default_subagent_model", "default_subagent_reasoning_effort"):
         if not isinstance(agents[key], str) or not agents[key].strip():
             fail(f"agents.{key} must be a non-empty string")
     validate_model_effort(str(doc["model"]), str(doc["model_reasoning_effort"]))
-    validate_model_effort(str(agents["default_subagent_model"]), str(agents["default_subagent_reasoning_effort"]))
+    validate_model_effort(
+        str(agents["default_subagent_model"]),
+        str(agents["default_subagent_reasoning_effort"]),
+    )
     return {
         "model": str(doc["model"]),
         "model_reasoning_effort": str(doc["model_reasoning_effort"]),
+        "features": {
+            "context_management": {
+                "experimental_mode": plain_value(context_management["experimental_mode"])
+            }
+        },
         "agents": {key: plain_value(agents[key]) for key in AGENT_KEYS},
     }
 
@@ -490,7 +553,11 @@ def parse_config_bytes(data: bytes, path: Path) -> Any:
         fail(f"invalid installed TOML at {path}: {exc}")
 
 
-def get_managed_settings(doc: Any) -> dict[str, Any]:
+def managed_agent_keys(version: int) -> set[str]:
+    return LEGACY_AGENT_KEYS if version in (1, 2) else AGENT_KEYS
+
+
+def get_managed_settings(doc: Any, *, version: int = STATE_VERSION) -> dict[str, Any]:
     agents = doc.get("agents")
     if not isinstance(agents, dict):
         fail("installed config has no [agents] table")
@@ -499,33 +566,77 @@ def get_managed_settings(doc: Any) -> dict[str, Any]:
         if key not in doc:
             fail(f"installed config is missing managed setting: {key}")
         result[key] = plain_value(doc[key])
-    for key in AGENT_KEYS:
+
+    if version >= 3:
+        features = doc.get("features")
+        context_management = features.get("context_management") if isinstance(features, dict) else None
+        if not isinstance(context_management, dict) or "experimental_mode" not in context_management:
+            fail("installed config is missing managed setting: features.context_management.experimental_mode")
+        result["features"] = {
+            "context_management": {
+                "experimental_mode": plain_value(context_management["experimental_mode"])
+            }
+        }
+
+    keys = managed_agent_keys(version)
+    for key in keys:
         if key not in agents:
             fail(f"installed config is missing managed setting: agents.{key}")
-    result["agents"] = {key: plain_value(agents[key]) for key in AGENT_KEYS}
+    result["agents"] = {key: plain_value(agents[key]) for key in keys}
     return result
 
 
-def merged_config_bytes(path: Path, settings: dict[str, Any], existing: bytes | None = None) -> bytes:
+def merged_config_bytes(
+    path: Path,
+    settings: dict[str, Any],
+    existing: bytes | None = None,
+    *,
+    retire_max_depth: bool = False,
+) -> bytes:
     doc = parse_config_bytes(existing, path) if existing is not None else read_installed_config(path)
+    if "features" not in doc or not isinstance(doc["features"], dict):
+        doc["features"] = table()
+    if (
+        "context_management" not in doc["features"]
+        or not isinstance(doc["features"]["context_management"], dict)
+    ):
+        doc["features"]["context_management"] = table()
     if "agents" not in doc or not isinstance(doc["agents"], dict):
         doc["agents"] = table()
+
     if plain_value(doc.get("model")) != settings["model"]:
         doc["model"] = settings["model"]
     if plain_value(doc.get("model_reasoning_effort")) != settings["model_reasoning_effort"]:
         doc["model_reasoning_effort"] = settings["model_reasoning_effort"]
+
+    context_setting = settings["features"]["context_management"]["experimental_mode"]
+    if plain_value(doc["features"]["context_management"].get("experimental_mode")) != context_setting:
+        doc["features"]["context_management"]["experimental_mode"] = context_setting
+
     for key, value in settings["agents"].items():
         if plain_value(doc["agents"].get(key)) != value:
             doc["agents"][key] = value
+    if retire_max_depth and "max_depth" in doc["agents"]:
+        del doc["agents"]["max_depth"]
     return dumps(doc).encode("utf-8")
 
 
 def migration_additions(state: dict[str, Any] | None, home: Path) -> set[Path]:
-    return {home / path for path in ADDED_DESTINATIONS} if state and state["version"] == 1 else set()
+    if not state or state["version"] != 1:
+        return set()
+    return {home / DESTINATIONS[path] for path in V1_ADDED_SOURCES}
 
 
 def migration_retirements(state: dict[str, Any] | None, home: Path) -> set[Path]:
-    return {home / path for path in RETIRED_DESTINATIONS} if state and state["version"] == 1 else set()
+    if not state or state["version"] == STATE_VERSION:
+        return set()
+    return {home / path for path in MIGRATION_RETIREMENTS[state["version"]]}
+
+
+def migration_label(state: dict[str, Any] | None) -> str | None:
+    if not state or state["version"] == STATE_VERSION:
+        return None
+    return f"v{state['version']}-to-v{STATE_VERSION}"
 
 
 def ensure_destinations(home: Path, *, allow_missing: bool = False,
@@ -566,7 +677,7 @@ def assert_snapshot_matches_state(state, home, destinations, snapshot) -> None:
     saved_hashes = state["installed_hashes"]
     config_dest = destinations[SOURCE_CONFIG]
     config_doc = parse_config_bytes(snapshot[config_dest][0], config_dest)
-    if get_managed_settings(config_doc) != state["managed_settings"]:
+    if get_managed_settings(config_doc, version=state["version"]) != state["managed_settings"]:
         fail("managed settings in installed config changed during apply preparation")
     additions = migration_additions(state, home)
     for dest, entry in snapshot.items():
@@ -611,7 +722,7 @@ def load_state(path: Path) -> dict[str, Any] | None:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         fail(f"invalid state file {path}: {exc}")
-    if not isinstance(value, dict) or type(value.get("version")) is not int or value["version"] not in (1, STATE_VERSION):
+    if not isinstance(value, dict) or type(value.get("version")) is not int or value["version"] not in DESTINATIONS_BY_VERSION:
         fail(f"unsupported state file: {path}")
     return value
 
@@ -657,15 +768,15 @@ def assert_state_identity(state: dict[str, Any], identity: dict[str, Any], repo:
 def assert_managed_state(state: dict[str, Any], home: Path, destinations: dict[Path, Path]) -> None:
     saved_hashes = state.get("installed_hashes")
     saved_settings = state.get("managed_settings")
-    expected_keys = {path.as_posix() for path in
-                     (LEGACY_DESTINATIONS if state["version"] == 1 else DESTINATIONS).values()}
+    expected_map = DESTINATIONS_BY_VERSION[state["version"]]
+    expected_keys = {path.as_posix() for path in expected_map.values()}
     if not isinstance(saved_hashes, dict) or set(saved_hashes) != expected_keys:
         fail("state is missing the complete managed file hash set")
     if not isinstance(saved_settings, dict):
         fail("state is missing managed settings")
     config_dest = destinations[SOURCE_CONFIG]
     current_doc = read_installed_config(config_dest)
-    if get_managed_settings(current_doc) != saved_settings:
+    if get_managed_settings(current_doc, version=state["version"]) != saved_settings:
         fail("managed settings in installed config changed since installation")
     additions = migration_additions(state, home)
     for dest in destinations.values():
@@ -677,7 +788,7 @@ def assert_managed_state(state: dict[str, Any], home: Path, destinations: dict[P
         ensure_regular_file(dest)
         key = home_relative(dest.relative_to(home))
         # The configuration hash is a receipt for the applied result, while
-        # unrelated local config edits are explicitly allowed.  The managed
+        # unrelated local config edits are explicitly allowed. The managed
         # TOML values above are the drift check for this destination.
         if dest == config_dest:
             continue
@@ -695,12 +806,19 @@ def build_target_bytes(
     settings: dict[str, Any],
     destinations: dict[Path, Path],
     snapshot: dict[Path, SnapshotEntry] | None = None,
+    *,
+    state: dict[str, Any] | None = None,
 ) -> dict[Path, bytes]:
     targets: dict[Path, bytes] = {}
     for source, dest in destinations.items():
         if source == SOURCE_CONFIG:
             existing = snapshot[dest][0] if snapshot is not None else None
-            targets[dest] = merged_config_bytes(dest, settings, existing)
+            targets[dest] = merged_config_bytes(
+                dest,
+                settings,
+                existing,
+                retire_max_depth=bool(state and state["version"] in (1, 2)),
+            )
         else:
             targets[dest] = contents[source]
     return targets
@@ -936,7 +1054,7 @@ def run_plan(repo: Path, home: Path) -> dict[str, Any]:
     additions = migration_additions(state, home)
     retirements = migration_retirements(state, home)
     destinations = ensure_destinations(home, additions=additions)
-    targets = build_target_bytes(contents, settings, destinations)
+    targets = build_target_bytes(contents, settings, destinations, state=state)
     identity = repository_identity(repo, require_clean=False)
     if state:
         assert_state_identity(state, identity, repo)
@@ -949,9 +1067,10 @@ def run_plan(repo: Path, home: Path) -> dict[str, Any]:
         "state": "installed" if state else "bootstrap-required",
         "changes": changes,
         "managed_files": len(targets),
-        "migration": "v1-to-v2" if additions or retirements else None,
+        "migration": migration_label(state),
         "new_files": sorted(str(path.relative_to(home)) for path in additions),
         "removed_files": sorted(str(path.relative_to(home)) for path in retirements),
+        "removed_settings": ["agents.max_depth"] if state and state["version"] in (1, 2) else [],
     }
 
 
@@ -965,7 +1084,8 @@ def run_status(repo: Path, home: Path) -> dict[str, Any]:
         assert_state_identity(state, identity, repo)
         assert_managed_state(state, home, destinations)
         result.update({"source_commit": state.get("source_commit"), "installed_at": state.get("installed_at"),
-                       "receipt_version": state["version"], "migration_pending": state["version"] == 1})
+                       "receipt_version": state["version"], "migration_pending": state["version"] != STATE_VERSION,
+                       "migration": migration_label(state)})
     return result
 
 
@@ -1033,7 +1153,7 @@ def run_apply(repo: Path, home: Path, baseline_path: str | None) -> dict[str, An
                     fail(f"bootstrap baseline changed during apply preparation: {dest}")
         else:
             assert_snapshot_matches_state(state, home, destinations, snapshot)
-        targets = build_target_bytes(contents, settings, destinations, snapshot)
+        targets = build_target_bytes(contents, settings, destinations, snapshot, state=state)
         final_identity = repository_identity(repo, require_clean=True)
         if final_identity["commit"] != identity["commit"]:
             fail("source HEAD changed during apply preparation; retry after review")

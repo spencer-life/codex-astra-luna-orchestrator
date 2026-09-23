@@ -1,22 +1,12 @@
-# Routine Coding
+# Routine coding
 
-Choose this preset for predictable, routine coding tasks where lower cost and
-faster orchestration are preferred.
+For a session dominated by scoped implementation, choose **GPT-6 Luna** in the Codex
+model picker instead of rewriting the shared config. Start at Medium for coordinated
+routine work; use High when the primary Luna thread needs more implementation judgment.
 
-This is an optional root override for the [Plus profile](plus-plan.md),
-lowering its Luna root from `max` to `medium`. The installed Luna subagents
-remain at `medium` and the Astra reviewer at `low`. If you adopt this override,
-update the installed skill's root-reasoning wording to match.
+The active picker model becomes the root for that session. Named specialists keep
+their pins: explorer/researcher Luna Medium, worker/tester Luna High, reviewer Sol
+Medium. This makes a Luna-root session cheap and fast without losing the option of an
+independent Sol review.
 
-Add or merge this into:
-
-`~/.codex/config.toml`
-
-```toml
-model = "gpt-5.6-luna"
-model_reasoning_effort = "medium"
-service_tier = "fast"
-```
-
-If your Codex version does not support `service_tier`, remove that line and
-keep the model and reasoning settings.
+Do not spawn specialists for trivial work merely because capacity exists.

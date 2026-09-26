@@ -23,10 +23,9 @@ For performance investigations and usage reporting, read `PERFORMANCE.md`.
 
 ## Delegation
 
-For complex coding tasks, use the `astra-orchestrator` skill when its trigger conditions match.
+For substantive coding work matching the `astra-orchestrator` skill, use it. Keep genuinely small tasks in the root. For multi-file implementation, cross-component debugging, repository-wide investigation, parallelizable workstreams, or useful independent testing, review, or technical research, delegate bounded work to the appropriate specialized subagents when available.
 
-The root agent owns architecture, decomposition, integration, and final verification.
-Prefer specialized subagents for bounded exploration, implementation, testing, review, and technical research.
+The root agent owns architecture, decomposition, integration, and final verification. Give each delegated task clear scope and ownership, and run independent tasks in parallel when useful.
 
 Do not delegate trivial work merely for parallelism.
 Do not let multiple implementation agents edit the same files without explicit ownership boundaries.

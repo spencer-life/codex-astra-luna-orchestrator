@@ -7,7 +7,7 @@ description: Route substantive Codex coding work between the active root session
 
 Honor explicit user instructions and active session choices. Optimize time to a
 correct, verified result rather than agent count. The active primary-session model
-is the root. The maintained default is GPT-6 Sol at medium reasoning, but a model
+is the root. The maintained default is GPT-6 Sol at high reasoning, but a model
 or effort selected in the Codex picker or CLI remains the root for that session.
 
 The root owns scope, architecture, decomposition, integration, and acceptance.
@@ -17,12 +17,12 @@ Specialists provide bounded evidence, implementation, testing, research, or revi
 
 | Role | Default | Scope |
 | --- | --- | --- |
-| root | active session; default Sol Medium | Routing, direct execution, integration, acceptance |
+| root | active session; default Sol High | Routing, direct execution, integration, acceptance |
 | explorer | Luna Medium | Repository mapping and straightforward tracing; read-only |
 | worker | Luna High | Bounded implementation and focused validation |
 | tester | Luna High | Independent reproduction, regression analysis, and test design |
 | researcher | Luna Medium | Version-specific primary-source research; read-only |
-| reviewer | Sol Medium | Independent consequential change review; read-only |
+| reviewer | Sol High | Independent consequential change review; read-only |
 
 Generic subagent fallback is Luna High. Keep at most four spawned threads open at
 once; the limit is capacity, not a target. Prefer a flat topology unless the user
@@ -35,8 +35,14 @@ Read-only roles must not edit even if a tool could technically write.
 
 ## Choose the execution path
 
-- **Direct:** keep small work in the root. Also keep difficult, cohesive work in
-  the root when delegation would require duplicating most of the problem context.
+For work spanning multiple files, independent workstreams, cross-component debugging,
+repo-wide changes, or useful independent review, delegate bounded tasks to specialized
+agents when available. An explicit user request to delegate requires an actual spawn;
+if spawning is unavailable, report that clearly.
+
+- **Direct:** keep genuinely small work in the root. Difficult cohesive work may
+  stay in the root only when handing it off would duplicate most of the problem
+  context and no bounded specialist would add useful independent evidence or execution.
 - **Discovery:** use explorer when locating files, tests, patterns, or a reasonably
   clear execution path benefits from independent context.
 - **Research:** use researcher for current, version-specific external facts that

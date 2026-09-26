@@ -106,7 +106,7 @@ keep = "unrelated"
         config = sync.read_installed_config(self.home / ".codex/config.toml")
         settings = sync.get_managed_settings(config)
         self.assertEqual(settings["model"], "gpt-6-sol")
-        self.assertEqual(settings["model_reasoning_effort"], "medium")
+        self.assertEqual(settings["model_reasoning_effort"], "high")
         self.assertTrue(settings["features"]["context_management"]["experimental_mode"])
         self.assertEqual(settings["agents"]["max_concurrent_threads_per_session"], 4)
         self.assertEqual(settings["agents"]["default_subagent_model"], "gpt-6-luna")
@@ -322,14 +322,14 @@ class SourceValidationTests(unittest.TestCase):
             "worker": ("gpt-6-luna", "high"),
             "tester": ("gpt-6-luna", "high"),
             "researcher": ("gpt-6-luna", "medium"),
-            "reviewer": ("gpt-6-sol", "medium"),
+            "reviewer": ("gpt-6-sol", "high"),
         }
         for role, pair in expected.items():
             doc = sync.parse(source[Path(f"orchestrator/agents/{role}.toml")].decode())
             self.assertEqual((doc["model"], doc["model_reasoning_effort"]), pair)
 
         settings = sync.source_settings(source)
-        self.assertEqual((settings["model"], settings["model_reasoning_effort"]), ("gpt-6-sol", "medium"))
+        self.assertEqual((settings["model"], settings["model_reasoning_effort"]), ("gpt-6-sol", "high"))
         self.assertTrue(settings["features"]["context_management"]["experimental_mode"])
         self.assertEqual(settings["agents"]["max_concurrent_threads_per_session"], 4)
         self.assertEqual(

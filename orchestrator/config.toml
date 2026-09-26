@@ -1,6 +1,6 @@
 # Only orchestrator-owned settings are applied to the installed configuration.
 model = "gpt-6-sol"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
 
 [features.context_management]
 experimental_mode = true

@@ -23,7 +23,7 @@ installed copies as the normal update path.
 
 ## Current defaults and routing
 
-The maintained default root is **GPT-6 Sol Medium**. The active session model is the
+The maintained default root is **GPT-6 Sol High**. The active session model is the
 root, so an explicit picker or CLI choice such as GPT-6 Luna is respected for the
 whole primary thread rather than being overwritten by the skill.
 
@@ -33,7 +33,7 @@ Configured specialists:
 - researcher: GPT-6 Luna Medium, read-only
 - worker: GPT-6 Luna High, workspace-write
 - tester: GPT-6 Luna High, workspace-write
-- reviewer: GPT-6 Sol Medium, read-only
+- reviewer: GPT-6 Sol High, read-only
 - generic fallback: GPT-6 Luna High
 
 There is no solver or Semble-search subagent. Hard architecture or ambiguous

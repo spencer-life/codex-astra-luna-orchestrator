@@ -10,12 +10,12 @@ The v3 starting policy is:
 
 | Role | Model / effort |
 | --- | --- |
-| root | active session; default GPT-6 Sol Medium |
+| root | active session; default GPT-6 Sol High |
 | explorer | GPT-6 Luna Medium |
 | researcher | GPT-6 Luna Medium |
 | worker | GPT-6 Luna High |
 | tester | GPT-6 Luna High |
-| reviewer | GPT-6 Sol Medium |
+| reviewer | GPT-6 Sol High |
 | generic fallback | GPT-6 Luna High |
 
 Semble is a direct MCP/CLI tool, not a subagent. Spawned concurrency is capped at
@@ -25,7 +25,7 @@ is added.
 
 The active primary-session model remains the root. Selecting GPT-6 Luna in the
 picker is therefore a supported fast/cheap root session; the independent reviewer
-remains pinned to Sol Medium when used.
+remains pinned to Sol High when used.
 
 Use the worker when the solution direction is sufficiently clear. Keep architecture,
 ambiguous cross-component reasoning, and integration with the root. Tester and
@@ -119,7 +119,7 @@ harness. For each task record:
 
 Useful comparisons are:
 
-1. default Sol Medium root with the normal specialists;
+1. default Sol High root with the normal specialists;
 2. Luna Medium or High as the primary session root via the picker;
 3. root-only execution when the task is cohesive enough that delegation adds overhead.
 

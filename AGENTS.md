@@ -23,7 +23,7 @@ For performance investigations and usage reporting, read `PERFORMANCE.md`.
 
 ## Delegation
 
-For substantive coding work matching the `astra-orchestrator` skill, use it.
+For substantive repository work matching the `astra-orchestrator` skill, use it.
 Root-only work is limited to genuinely small, localized tasks with a known
 implementation surface.
 

@@ -1,6 +1,6 @@
 ---
 name: astra-orchestrator
-description: Route substantive Codex coding work between the active root session and bounded specialist agents. Use for multi-file implementation, cross-component debugging, repository-wide changes, parallelizable workstreams, useful independent testing or review, version-specific research, or when the user asks to delegate. Keep genuinely small tasks in the root.
+description: Route substantive Codex repository work between the active root session and bounded specialist agents. Use for multi-file implementation, cross-component debugging, repository-wide changes, parallelizable workstreams, useful independent testing or review, version-specific research, or when the user asks to delegate. Keep genuinely small tasks in the root.
 ---
 
 # Codex Orchestrator

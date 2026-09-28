@@ -1,6 +1,6 @@
 # Performance and measurement
 
-Maintained source: `personal`. Decisions and documentation checked **September 22,
+Maintained source: `personal`. Decisions and documentation checked **September 27,
 2026**. This is an on-demand performance reference, not context every coding turn
 needs.
 
@@ -15,21 +15,23 @@ The v3 starting policy is:
 | researcher | GPT-6 Luna Medium |
 | worker | GPT-6 Luna High |
 | tester | GPT-6 Luna High |
-| reviewer | GPT-6 Sol High |
+| reviewer | GPT-6 Sol Max |
 | generic fallback | GPT-6 Luna High |
 
 Semble is a direct MCP/CLI tool, not a subagent. Spawned concurrency is capped at
-four. Experimental context management is enabled. No permanent Terra role, solver,
-Semble-search agent, routine Max default, forced Fast mode, or dynamic model router
-is added.
+four. Experimental context management is enabled. No permanent Terra role, solver, Semble-search agent, forced Fast mode, or dynamic
+model router is added. Max reasoning is reserved for the selective Sol reviewer rather
+than used as a routine root or Luna default.
 
 The active primary-session model remains the root. Selecting GPT-6 Luna in the
 picker is therefore a supported fast/cheap root session; the independent reviewer
-remains pinned to Sol High when used.
+remains pinned to Sol Max when used.
 
 Use the worker when the solution direction is sufficiently clear. Keep architecture,
-ambiguous cross-component reasoning, and integration with the root. Tester and
-reviewer are selective evidence gates, not mandatory steps for every trivial edit.
+ambiguous cross-component reasoning, and integration with the root. The hard
+delegation gate sends substantive repository discovery and other bounded specialist
+work out of the root as soon as a trigger applies. Tester and reviewer remain
+selective evidence gates rather than mandatory steps for every trivial edit.
 
 ## Evidence basis
 

@@ -23,7 +23,13 @@ The default root is GPT-6 Sol at high reasoning. A model or effort selected in t
 Codex picker/CLI remains the active root for that session, so a Luna-only session is
 supported without rewriting the shared configuration. Explorer/researcher use GPT-6
 Luna Medium; worker/tester and generic fallback use GPT-6 Luna High; the independent
-read-only reviewer uses GPT-6 Sol High. Spawned concurrency is capped at four.
+read-only reviewer uses GPT-6 Sol Max. Spawned concurrency is capped at four.
+
+The routing skill uses a hard delegation gate: substantive repository exploration,
+unknown implementation surfaces, multi-file/module inspection, cross-component
+tracing, version-specific research, separable implementation/verification, materially
+useful independent review, and explicit delegation requests spawn the appropriate
+specialist instead of being absorbed into the root.
 
 Semble is used directly through its installed MCP/CLI rather than through a dedicated
 subagent. The maintained configuration enables experimental context management.
@@ -40,7 +46,7 @@ Workspace Tools permission profiles, Auto-review/approval choices, MCPs/plugins,
 service tier, audio devices, voice selection, desktop preferences, credentials, and
 machine-specific settings stay local.
 
-Codex CLI 0.156.0 is the compatibility target for this migration. Voice conversations
+Codex CLI 0.156.1 is the recorded compatibility target for this migration. Voice conversations
 are enabled by default in that release; no portable voice flag is required here.
 Machine-local audio and realtime preferences remain outside the managed fragment.
 

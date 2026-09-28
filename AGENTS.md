@@ -23,10 +23,34 @@ For performance investigations and usage reporting, read `PERFORMANCE.md`.
 
 ## Delegation
 
-For substantive coding work matching the `astra-orchestrator` skill, use it. Keep genuinely small tasks in the root. For multi-file implementation, cross-component debugging, repository-wide investigation, parallelizable workstreams, or useful independent testing, review, or technical research, delegate bounded work to the appropriate specialized subagents when available.
+For substantive coding work matching the `astra-orchestrator` skill, use it.
+Root-only work is limited to genuinely small, localized tasks with a known
+implementation surface.
 
-The root agent owns architecture, decomposition, integration, and final verification. Give each delegated task clear scope and ownership, and run independent tasks in parallel when useful.
+Delegation is mandatory when any of these apply:
+
+- repository exploration is needed before implementation or diagnosis
+- the relevant implementation surface is not already known
+- multiple files, modules, services, or components need inspection
+- the task spans multiple files, modules, services, or components
+- two or more independent workstreams exist
+- debugging requires tracing across components
+- external or version-specific facts need verification
+- implementation and verification benefit from separate context
+- an independent post-change review is materially useful
+- the user explicitly asks for delegation, parallelism, agents, or subagents
+
+When a trigger applies, spawn the appropriate specialist before performing that
+bounded work in the root. For substantive read-only repository discovery, use the
+explorer; keep root reads to trivial known-location reads, exact lookups, and evidence
+needed for root-owned architecture or integration. Do not silently replace required
+delegation with root execution merely to avoid an agent hop.
+
+The root agent owns architecture, decomposition, integration, and final verification.
+Give each delegated task clear scope and ownership, and run independent tasks in
+parallel when useful.
 
 Do not delegate trivial work merely for parallelism.
-Do not let multiple implementation agents edit the same files without explicit ownership boundaries.
+Do not let multiple implementation agents edit the same files without explicit
+ownership boundaries.
 User instructions always take precedence over this orchestration policy.

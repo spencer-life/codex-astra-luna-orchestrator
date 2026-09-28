@@ -5,22 +5,24 @@ bounded execution roles. The active session model remains the root, so picker/CL
 overrides are supported.
 
 ```text
-active root (default Sol Medium)
+active root (default Sol High)
 ├── explorer       Luna Medium · read-only
 ├── researcher     Luna Medium · read-only
 ├── worker         Luna High   · workspace-write
 ├── tester         Luna High   · workspace-write
-└── reviewer       Sol Medium  · read-only
+└── reviewer       Sol Max     · read-only
 ```
 
-Generic fallback is Luna High. Spawned concurrency is four. Semble is called directly
-through its MCP/CLI; there is no solver or Semble-search subagent.
+Generic fallback is Luna High. Spawned concurrency is four. Substantive repository
+discovery and the other delegation-gate triggers spawn bounded specialists rather than
+remaining in the root. Semble is called directly through its MCP/CLI; there is no
+solver or Semble-search subagent.
 
 The managed config fragment is:
 
 ```toml
 model = "gpt-6-sol"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
 
 [features.context_management]
 experimental_mode = true

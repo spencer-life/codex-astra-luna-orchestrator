@@ -22,7 +22,7 @@ Specialists provide bounded evidence, implementation, testing, research, or revi
 | worker | Luna High | Bounded implementation and focused validation |
 | tester | Luna High | Independent reproduction, regression analysis, and test design |
 | researcher | Luna Medium | Version-specific primary-source research; read-only |
-| reviewer | Sol High | Independent consequential change review; read-only |
+| reviewer | Sol Max | Independent consequential change review; read-only |
 
 Generic subagent fallback is Luna High. Keep at most four spawned threads open at
 once; the limit is capacity, not a target. Prefer a flat topology unless the user
@@ -33,27 +33,52 @@ user's permission profile, Auto-review selection, service tier, MCP configuratio
 or other local settings. Preserve active session permissions and approval behavior.
 Read-only roles must not edit even if a tool could technically write.
 
+## Delegation gate
+
+Treat substantive repository work as delegated whenever any trigger below is present.
+Root-only work is reserved for genuinely small, localized tasks with a known
+implementation surface and no material benefit from an independent specialist.
+
+The root MUST spawn the appropriate specialist before performing that delegated work
+itself when any of these is true:
+
+- repository exploration is needed before implementation or diagnosis
+- the relevant implementation surface is not already known and must be located
+- multiple files, modules, services, or components need inspection
+- the task spans multiple files, modules, services, or components
+- two or more independent workstreams exist
+- debugging requires tracing across components
+- external or version-specific facts need verification
+- implementation and verification benefit from separate context
+- an independent post-change review is materially useful
+- the user explicitly asks for delegation, parallelism, agents, or subagents
+
+For substantive read-only repository discovery, spawn `explorer` immediately. Keep
+direct root reads to trivial known-location reads, exact symbol/config lookups, or
+evidence required for root-owned architecture and integration. Once a delegation
+trigger applies, do not continue the delegated investigation in the root while
+deciding whether the agent hop is worthwhile.
+
+If spawning is unavailable or fails, report that clearly. A safe direct fallback is
+allowed only when continuing is reasonable; do not claim delegation occurred.
+
 ## Choose the execution path
 
-For work spanning multiple files, independent workstreams, cross-component debugging,
-repo-wide changes, or useful independent review, delegate bounded tasks to specialized
-agents when available. An explicit user request to delegate requires an actual spawn;
-if spawning is unavailable, report that clearly.
-
-- **Direct:** keep genuinely small work in the root. Difficult cohesive work may
-  stay in the root only when handing it off would duplicate most of the problem
-  context and no bounded specialist would add useful independent evidence or execution.
-- **Discovery:** use explorer when locating files, tests, patterns, or a reasonably
-  clear execution path benefits from independent context.
-- **Research:** use researcher for current, version-specific external facts that
+- **Direct:** use only for genuinely small, localized work with a known surface and
+  no delegation trigger above.
+- **Discovery:** use explorer for repository mapping, locating files/tests/patterns,
+  dependency or configuration inspection, and execution/data-flow tracing beyond a
+  trivial known path.
+- **Research:** use researcher for current or version-specific external facts that
   should be verified from primary sources.
 - **Bounded implementation:** use worker after the direction, scope, and acceptance
   conditions are sufficiently clear. The worker owns ordinary implementation
   choices inside that contract.
 - **Independent verification:** use tester when reproduction, regression analysis,
   or distinct test reasoning adds evidence beyond the worker's focused checks.
-- **Independent review:** use reviewer for non-trivial or consequential changes.
-  Tiny deterministic edits do not need a review turn merely to satisfy a pipeline.
+- **Independent review:** use reviewer for non-trivial or consequential changes when
+  an independent post-change review is materially useful. Tiny deterministic edits
+  do not need a review turn merely to satisfy a pipeline.
 
 There is no solver role. If the hard part is deciding architecture, untangling an
 ambiguous problem, or choosing a cross-component direction, that remains root work.
@@ -61,7 +86,8 @@ The root may gather bounded evidence first, then hand a clear implementation con
 to the worker.
 
 Do not require every role after every change. Use only specialists with a distinct
-contribution, and do not make the root repeat a completed subagent investigation.
+contribution beyond the mandatory trigger that caused delegation, and do not make the
+root repeat a completed subagent investigation.
 
 ## Semble discovery
 

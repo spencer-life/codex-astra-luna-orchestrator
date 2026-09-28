@@ -322,7 +322,7 @@ class SourceValidationTests(unittest.TestCase):
             "worker": ("gpt-6-luna", "high"),
             "tester": ("gpt-6-luna", "high"),
             "researcher": ("gpt-6-luna", "medium"),
-            "reviewer": ("gpt-6-sol", "max"),
+            "reviewer": ("gpt-6-sol", "high"),
         }
         for role, pair in expected.items():
             doc = sync.parse(source[Path(f"orchestrator/agents/{role}.toml")].decode())

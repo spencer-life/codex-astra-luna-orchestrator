@@ -33,8 +33,16 @@ Configured specialists:
 - researcher: GPT-6 Luna Medium, read-only
 - worker: GPT-6 Luna High, workspace-write
 - tester: GPT-6 Luna High, workspace-write
-- reviewer: GPT-6 Sol High, read-only
+- reviewer: GPT-6 Sol Max, read-only
 - generic fallback: GPT-6 Luna High
+
+The routing skill uses a hard delegation gate for substantive work. Repository
+exploration, unknown implementation surfaces, multi-file/module inspection,
+cross-component tracing, version-specific research, separable implementation and
+verification, materially useful independent review, and explicit delegation requests
+trigger a real specialist spawn. Substantive read-only repository discovery belongs
+to the Luna Medium explorer; the root keeps architecture, integration, and trivial
+known-location reads.
 
 There is no solver or Semble-search subagent. Hard architecture or ambiguous
 cross-component reasoning stays with the root; once direction is clear, the worker

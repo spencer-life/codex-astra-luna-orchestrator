@@ -6,7 +6,9 @@ routine work; use High when the primary Luna thread needs more implementation ju
 
 The active picker model becomes the root for that session. Named specialists keep
 their pins: explorer/researcher Luna Medium, worker/tester Luna High, reviewer Sol
-Medium. This makes a Luna-root session cheap and fast without losing the option of an
+Max. This makes a Luna-root session cheap and fast without losing the option of an
 independent Sol review.
 
-Do not spawn specialists for trivial work merely because capacity exists.
+Trivial, known-surface work stays direct. Once a hard delegation trigger applies,
+spawn the appropriate specialist rather than spending root context deciding whether
+the agent hop is worthwhile.

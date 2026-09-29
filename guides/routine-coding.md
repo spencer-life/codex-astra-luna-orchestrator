@@ -5,9 +5,9 @@ model picker instead of rewriting the shared config. Start at Medium for coordin
 routine work; use High when the primary Luna thread needs more implementation judgment.
 
 The active picker model becomes the root for that session. Named specialists keep
-their pins: explorer/researcher Luna Medium, worker/tester Luna High, reviewer Sol
-Max. This makes a Luna-root session cheap and fast without losing the option of an
-independent Sol review.
+their pins: explorer/researcher Luna Medium, worker/tester Luna High, reviewer
+GPT-6.1 Sol Medium. This makes a Luna-root session cheap and fast without losing
+the option of an independent Sol review.
 
 Trivial, known-surface work stays direct. Once a hard delegation trigger applies,
 spawn the appropriate specialist rather than spending root context deciding whether

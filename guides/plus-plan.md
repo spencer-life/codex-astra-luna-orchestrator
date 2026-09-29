@@ -11,7 +11,7 @@ Named roles remain pinned independently:
 
 - explorer/researcher: GPT-6 Luna Medium
 - worker/tester: GPT-6 Luna High
-- reviewer: GPT-6 Sol Max
+- reviewer: GPT-6.1 Sol Medium
 
 If you truly want an all-Luna topology including review, that is a separate maintained
 policy change rather than a session picker override.

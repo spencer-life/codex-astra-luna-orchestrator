@@ -105,7 +105,7 @@ keep = "unrelated"
     def assert_v3_config(self):
         config = sync.read_installed_config(self.home / ".codex/config.toml")
         settings = sync.get_managed_settings(config)
-        self.assertEqual(settings["model"], "gpt-6-sol")
+        self.assertEqual(settings["model"], "gpt-6.1-sol")
         self.assertEqual(settings["model_reasoning_effort"], "high")
         self.assertTrue(settings["features"]["context_management"]["experimental_mode"])
         self.assertEqual(settings["agents"]["max_concurrent_threads_per_session"], 4)
@@ -322,14 +322,14 @@ class SourceValidationTests(unittest.TestCase):
             "worker": ("gpt-6-luna", "high"),
             "tester": ("gpt-6-luna", "high"),
             "researcher": ("gpt-6-luna", "medium"),
-            "reviewer": ("gpt-6-sol", "high"),
+            "reviewer": ("gpt-6.1-sol", "medium"),
         }
         for role, pair in expected.items():
             doc = sync.parse(source[Path(f"orchestrator/agents/{role}.toml")].decode())
             self.assertEqual((doc["model"], doc["model_reasoning_effort"]), pair)
 
         settings = sync.source_settings(source)
-        self.assertEqual((settings["model"], settings["model_reasoning_effort"]), ("gpt-6-sol", "high"))
+        self.assertEqual((settings["model"], settings["model_reasoning_effort"]), ("gpt-6.1-sol", "high"))
         self.assertTrue(settings["features"]["context_management"]["experimental_mode"])
         self.assertEqual(settings["agents"]["max_concurrent_threads_per_session"], 4)
         self.assertEqual(
@@ -402,7 +402,7 @@ class SourceValidationTests(unittest.TestCase):
         self.assertEqual(report["status"], "catalog-compatible")
         self.assertEqual(report["checked_roles"], 7)
 
-        payload["models"] = [m for m in payload["models"] if m["slug"] != "gpt-6-sol"]
+        payload["models"] = [m for m in payload["models"] if m["slug"] != "gpt-6.1-sol"]
         path.write_text(json.dumps(payload))
         with self.assertRaisesRegex(sync.SyncError, "does not advertise"):
             sync.run_compatibility(self.repo, path)

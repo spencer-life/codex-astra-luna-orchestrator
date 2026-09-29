@@ -19,11 +19,11 @@ mise run orchestrator:apply
 mise run orchestrator:status
 ```
 
-The default root is GPT-6 Sol at high reasoning. A model or effort selected in the
+The default root is GPT-6.1 Sol at high reasoning. A model or effort selected in the
 Codex picker/CLI remains the active root for that session, so a Luna-only session is
 supported without rewriting the shared configuration. Explorer/researcher use GPT-6
 Luna Medium; worker/tester and generic fallback use GPT-6 Luna High; the independent
-read-only reviewer uses GPT-6 Sol Max. Spawned concurrency is capped at four.
+read-only reviewer uses GPT-6.1 Sol Medium. Spawned concurrency is capped at four.
 
 The routing skill uses a hard delegation gate: substantive repository exploration,
 unknown implementation surfaces, multi-file/module inspection, cross-component

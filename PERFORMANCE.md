@@ -1,6 +1,6 @@
 # Performance and measurement
 
-Maintained source: `personal`. Decisions and documentation checked **September 27,
+Maintained source: `personal`. Decisions and documentation checked **September 29,
 2026**. This is an on-demand performance reference, not context every coding turn
 needs.
 
@@ -10,22 +10,22 @@ The v3 starting policy is:
 
 | Role | Model / effort |
 | --- | --- |
-| root | active session; default GPT-6 Sol High |
+| root | active session; default GPT-6.1 Sol High |
 | explorer | GPT-6 Luna Medium |
 | researcher | GPT-6 Luna Medium |
 | worker | GPT-6 Luna High |
 | tester | GPT-6 Luna High |
-| reviewer | GPT-6 Sol Max |
+| reviewer | GPT-6.1 Sol Medium |
 | generic fallback | GPT-6 Luna High |
 
 Semble is a direct MCP/CLI tool, not a subagent. Spawned concurrency is capped at
-four. Experimental context management is enabled. No permanent Terra role, solver, Semble-search agent, forced Fast mode, or dynamic
-model router is added. Max reasoning is reserved for the selective Sol reviewer rather
-than used as a routine root or Luna default.
+four. Experimental context management is enabled. No permanent Terra role, solver,
+Semble-search agent, forced Fast mode, or dynamic model router is added. Max reasoning
+is not part of the root or reviewer defaults.
 
 The active primary-session model remains the root. Selecting GPT-6 Luna in the
 picker is therefore a supported fast/cheap root session; the independent reviewer
-remains pinned to Sol Max when used.
+uses GPT-6.1 Sol Medium when used.
 
 Use the worker when the solution direction is sufficiently clear. Keep architecture,
 ambiguous cross-component reasoning, and integration with the root. The hard
@@ -38,6 +38,7 @@ selective evidence gates rather than mandatory steps for every trivial edit.
 Primary references:
 
 - [GPT-6 Sol](https://developers.openai.com/api/docs/models/gpt-6-sol)
+- [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol)
 - [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna)
 - [Reasoning guidance](https://developers.openai.com/api/docs/guides/reasoning)
 - [Codex pricing](https://learn.chatgpt.com/docs/pricing)
@@ -84,13 +85,14 @@ separated by default. Requested service tier is not proof of the served tier.
 
 ### Standard-rate comparison, not billing
 
-Rates checked **2026-09-22**, credits per one million uncached input / cached input /
+Rates checked **2026-09-29**, credits per one million uncached input / cached input /
 output tokens:
 
 | Model | Uncached | Cached | Output |
 | --- | ---: | ---: | ---: |
 | GPT-6 Astra | 250 | 25 | 1250 |
 | GPT-6 Sol | 50 | 5 | 250 |
+| GPT-6.1 Sol | 50 | 2.5 | 250 |
 | GPT-6 Luna | 2.5 | 0.25 | 12.5 |
 | GPT-5.6 Sol | 100 | 10 | 500 |
 | GPT-5.6 Terra | 50 | 5 | 300 |
@@ -121,7 +123,7 @@ harness. For each task record:
 
 Useful comparisons are:
 
-1. default Sol High root with the normal specialists;
+1. default GPT-6.1 Sol High root with the normal specialists;
 2. Luna Medium or High as the primary session root via the picker;
 3. root-only execution when the task is cohesive enough that delegation adds overhead.
 

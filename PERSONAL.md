@@ -23,7 +23,7 @@ installed copies as the normal update path.
 
 ## Current defaults and routing
 
-The maintained default root is **GPT-6 Sol High**. The active session model is the
+The maintained default root is **GPT-6.1 Sol High**. The active session model is the
 root, so an explicit picker or CLI choice such as GPT-6 Luna is respected for the
 whole primary thread rather than being overwritten by the skill.
 
@@ -33,7 +33,7 @@ Configured specialists:
 - researcher: GPT-6 Luna Medium, read-only
 - worker: GPT-6 Luna High, workspace-write
 - tester: GPT-6 Luna High, workspace-write
-- reviewer: GPT-6 Sol Max, read-only
+- reviewer: GPT-6.1 Sol Medium, read-only
 - generic fallback: GPT-6 Luna High
 
 The routing skill uses a hard delegation gate for substantive work. Repository
@@ -105,7 +105,7 @@ an unmerged PR. For remote candidates, review and test their branch first, then 
 approved changes into `personal`. A plan requires the maintained checkout identity;
 do not bypass the branch guard to install a feature branch.
 
-The source validator uses the documented model/effort matrix checked **2026-09-22**.
+The source validator uses the documented model/effort matrix checked **2026-09-29**.
 That is structural evidence, not proof of account availability. Before installing new
 model selections, run the compatibility check against a fresh local Codex model
 catalog and verify the effective selections in a new session. Never silently alias an

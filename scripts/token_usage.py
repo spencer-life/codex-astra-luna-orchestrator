@@ -38,7 +38,7 @@ USAGE_KEYS = (
 
 
 RATE_CARD = {
-    "checked": "2026-09-22",
+    "checked": "2026-09-29",
     "source": "https://learn.chatgpt.com/docs/pricing",
     "unit": "Standard-rate credit equivalent per million tokens",
     "note": "Comparison baseline only, irrespective of observed tier. Not an actual charge, current live quote, or included-plan allowance conversion. No Fast multiplier, promotions, tools, or long-context adjustments applied.",
@@ -46,6 +46,7 @@ RATE_CARD = {
 STANDARD_RATES = {
     "gpt-6-astra": (250, 25, 1250),
     "gpt-6-sol": (50, 5, 250),
+    "gpt-6.1-sol": (50, 2.5, 250),
     "gpt-6-luna": (2.5, 0.25, 12.5),
     "gpt-5.6-sol": (100, 10, 500),
     "gpt-5.6": (100, 10, 500),

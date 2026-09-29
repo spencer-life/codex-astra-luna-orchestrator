@@ -1,16 +1,16 @@
 # Personal v3 orchestration
 
-The maintained personal setup uses GPT-6 Sol as the default root and GPT-6 Luna for
+The maintained personal setup uses GPT-6.1 Sol as the default root and GPT-6 Luna for
 bounded execution roles. The active session model remains the root, so picker/CLI
 overrides are supported.
 
 ```text
-active root (default Sol High)
+active root (default GPT-6.1 Sol High)
 ├── explorer       Luna Medium · read-only
 ├── researcher     Luna Medium · read-only
 ├── worker         Luna High   · workspace-write
 ├── tester         Luna High   · workspace-write
-└── reviewer       Sol Max     · read-only
+└── reviewer       GPT-6.1 Sol Medium · read-only
 ```
 
 Generic fallback is Luna High. Spawned concurrency is four. Substantive repository
@@ -21,7 +21,7 @@ solver or Semble-search subagent.
 The managed config fragment is:
 
 ```toml
-model = "gpt-6-sol"
+model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
 
 [features.context_management]

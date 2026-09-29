@@ -7,7 +7,7 @@ description: Route substantive Codex repository work between the active root ses
 
 Honor explicit user instructions and active session choices. Optimize time to a
 correct, verified result rather than agent count. The active primary-session model
-is the root. The maintained default is GPT-6 Sol at high reasoning, but a model
+is the root. The maintained default is GPT-6.1 Sol at high reasoning, but a model
 or effort selected in the Codex picker or CLI remains the root for that session.
 
 The root owns scope, architecture, decomposition, integration, and acceptance.
@@ -17,12 +17,12 @@ Specialists provide bounded evidence, implementation, testing, research, or revi
 
 | Role | Default | Scope |
 | --- | --- | --- |
-| root | active session; default Sol High | Routing, direct execution, integration, acceptance |
+| root | active session; default Sol 6.1 High | Routing, direct execution, integration, acceptance |
 | explorer | Luna Medium | Repository mapping and straightforward tracing; read-only |
 | worker | Luna High | Bounded implementation and focused validation |
 | tester | Luna High | Independent reproduction, regression analysis, and test design |
 | researcher | Luna Medium | Version-specific primary-source research; read-only |
-| reviewer | Sol Max | Independent consequential change review; read-only |
+| reviewer | Sol 6.1 Medium | Independent consequential change review; read-only |
 
 Generic subagent fallback is Luna High. Keep at most four spawned threads open at
 once; the limit is capacity, not a target. Prefer a flat topology unless the user

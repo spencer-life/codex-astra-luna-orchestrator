@@ -47,7 +47,7 @@ class OrchestratorSyncTests(unittest.TestCase):
 
     def _write_installed_files(self):
         config = '''# local setting preserved by apply
-model = "gpt-6-sol"
+model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
 model_verbosity = "low"
 default_permissions = "workspace-tools"

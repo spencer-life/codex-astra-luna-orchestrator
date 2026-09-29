@@ -15,12 +15,13 @@ It groups root and subagent threads, separates Auto-review/guardian usage by def
 reports uncached/cached/output tokens, model/effort and service-tier evidence when
 recorded, and calculates a Standard-rate credit equivalent.
 
-Rates checked 2026-09-22:
+Rates checked 2026-09-29:
 
 | Model | Uncached input | Cached input | Output |
 | --- | ---: | ---: | ---: |
 | GPT-6 Astra | 250 | 25 | 1250 |
 | GPT-6 Sol | 50 | 5 | 250 |
+| GPT-6.1 Sol | 50 | 2.5 | 250 |
 | GPT-6 Luna | 2.5 | 0.25 | 12.5 |
 | GPT-5.6 Sol | 100 | 10 | 500 |
 | GPT-5.6 Terra | 50 | 5 | 300 |
@@ -30,8 +31,8 @@ The GPT-5.6 rows remain because the reporter also reads historical sessions. The
 credit equivalent is a comparison baseline, not an actual bill or subscription-window
 charge.
 
-For a useful v3 comparison, run a few representative tasks with the default Sol
-Medium root, then comparable tasks with Luna as the primary session model. Record wall
+For a useful v3 comparison, run a few representative tasks with the default GPT-6.1
+Sol High root, then comparable tasks with Luna as the primary session model. Record wall
 time, accepted outcome, repair/review turns, cache hit rate, and per-model usage.
 Do not infer GPT-6 speed from older GPT-5.6 runs or from intelligence benchmark scores.
 

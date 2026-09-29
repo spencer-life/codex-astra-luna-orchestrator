@@ -145,10 +145,11 @@ MIGRATION_RETIREMENTS = {
 STATE_VERSION = 3
 # Documentation snapshot, not an assertion about any account's live availability.
 # https://developers.openai.com/api/docs/models/gpt-6-{astra,sol,luna}
-MODEL_SUPPORT_CHECKED = "2026-09-22"
+MODEL_SUPPORT_CHECKED = "2026-09-29"
 REASONING_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 MODEL_EFFORTS = {
     "gpt-6-astra": REASONING_EFFORTS,
+    "gpt-6.1-sol": REASONING_EFFORTS,
     "gpt-6-sol": REASONING_EFFORTS | {"none"},
     "gpt-6-luna": REASONING_EFFORTS | {"none"},
     **{

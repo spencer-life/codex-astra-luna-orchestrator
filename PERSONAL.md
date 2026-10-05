@@ -44,6 +44,12 @@ The source skill was adapted to preserve this setup's active-root behavior and
 configured specialist efforts, set the reviewer to GPT-6.1 Sol High, and link the
 two repository reference files required by source validation.
 
+The five role files in `orchestrator/agents/` follow upstream profile
+`profiles/GPT6-SolMedium-LunaMax/codex/agents/` at commit
+`f5efba0f957a1e3f0671e629ccc2c655725a7e7b`. They retain only this setup's
+current `model` and `model_reasoning_effort` values; all other role content
+comes directly from that upstream profile.
+
 Keep at most four spawned threads open. The cap is capacity, not a target. No
 `max_depth` setting is managed in v3; current Codex documents that setting as
 V1-only and ignored by V2.

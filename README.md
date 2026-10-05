@@ -10,9 +10,8 @@ apply.** Read [PERSONAL.md](PERSONAL.md) for the guarded workflow and recovery.
 [PERFORMANCE.md](PERFORMANCE.md) records the current routing and measurement basis.
 
 ```sh
-mise run orchestrator:validate
-mise run orchestrator:test
-mise run orchestrator:compatibility --model-catalog /path/to/current-model-catalog.json
+mise run orchestrator:upstream  # Preview original-project changes when updating
+mise run orchestrator:check
 mise run orchestrator:plan
 # After review and merge/commit on personal:
 mise run orchestrator:apply
@@ -23,13 +22,12 @@ The default root is GPT-6.1 Sol at high reasoning. A model or effort selected in
 Codex picker/CLI remains the active root for that session, so a Luna-only session is
 supported without rewriting the shared configuration. Explorer/researcher use GPT-6
 Luna Medium; worker/tester and generic fallback use GPT-6 Luna High; the independent
-read-only reviewer uses GPT-6.1 Sol Medium. Spawned concurrency is capped at four.
+read-only reviewer uses GPT-6.1 Sol High. Spawned concurrency is capped at four.
 
-The routing skill uses a hard delegation gate: substantive repository exploration,
-unknown implementation surfaces, multi-file/module inspection, cross-component
-tracing, version-specific research, separable implementation/verification, materially
-useful independent review, and explicit delegation requests spawn the appropriate
-specialist instead of being absorbed into the root.
+The routing skill and role instructions follow the original upstream templates,
+with personal model and effort selections retained. The root owns architecture,
+integration, and final verification; bounded work and useful independent checks
+are delegated to specialists.
 
 Semble is used directly through its installed MCP/CLI rather than through a dedicated
 subagent. The maintained configuration enables experimental context management.
@@ -51,7 +49,7 @@ are enabled by default in that release; no portable voice flag is required here.
 Machine-local audio and realtime preferences remain outside the managed fragment.
 
 The skill's filesystem path and frontmatter name remain `astra-orchestrator` for
-installation compatibility, while its user-facing heading is **Codex Orchestrator**.
+installation compatibility, with the upstream orchestrator structure adapted to the configured model efforts.
 
 `main`, inherited `profiles/`, and `setup.sh`/`setup.ps1` remain upstream
 reference material rather than the personal apply path. Original project:

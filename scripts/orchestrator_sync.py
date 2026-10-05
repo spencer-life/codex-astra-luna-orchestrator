@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import copy
+import difflib
 import fcntl
 import hashlib
 import json
@@ -365,6 +366,147 @@ def run_compatibility(repo: Path, catalog_path: Path) -> dict[str, Any]:
     return {"status": "catalog-compatible", "checked_roles": len(pairs),
             "catalog_sha256": sha256_file(catalog_path),
             "note": "Advertised catalog support only; refresh locally and verify effective settings in a new session. No request was run."}
+
+
+def run_fresh_compatibility(repo: Path) -> dict[str, Any]:
+    """Check selections against the catalog emitted by this Codex installation."""
+    try:
+        help_result = subprocess.run(
+            ["codex", "debug", "--help"], capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError:
+        fail("Codex CLI is unavailable; install or put codex on PATH before refreshing the model catalog")
+    if help_result.returncode:
+        fail("could not inspect `codex debug --help`; refresh the CLI or inspect its local installation")
+    if not re.search(r"(?m)^\s+models(?:\s|$)", help_result.stdout + help_result.stderr):
+        fail("this Codex CLI does not advertise `codex debug models`; update Codex before refreshing the catalog")
+    try:
+        result = subprocess.run(
+            ["codex", "debug", "models"], capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError:
+        fail("Codex CLI disappeared while refreshing the model catalog")
+    if result.returncode:
+        fail("`codex debug models` failed; no cached catalog was used")
+    with tempfile.TemporaryDirectory(prefix="orchestrator-model-catalog-") as temp_dir:
+        catalog = Path(temp_dir) / "models.json"
+        catalog.write_text(result.stdout, encoding="utf-8")
+        return run_compatibility(repo, catalog)
+
+
+def _git_bytes(repo: Path, *args: str) -> bytes:
+    result = subprocess.run(["git", *args], cwd=repo, capture_output=True, check=False)
+    if result.returncode:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        fail(f"git {' '.join(args)} failed: {detail or 'unknown Git error'}")
+    return result.stdout
+
+
+def _upstream_url_is_source(value: str) -> bool:
+    value = value.strip()
+    if value.startswith("git@github.com:"):
+        path = value.split(":", 1)[1]
+    else:
+        parsed = urlsplit(value)
+        if parsed.scheme not in {"https", "ssh", "git"} or parsed.hostname != "github.com":
+            return False
+        path = parsed.path
+    return path.strip("/").removesuffix(".git") == "donvito/codex-astra-luna-orchestrator"
+
+
+def _profile_path(name: str) -> str:
+    return f"profiles/GPT6-SolMedium-LunaMax/{name}"
+
+
+def _role_differences(current: bytes, candidate: bytes, role_name: str) -> dict[str, Any]:
+    try:
+        current_doc = parse(current.decode("utf-8"))
+        candidate_doc = parse(candidate.decode("utf-8"))
+    except (UnicodeDecodeError, ParseError) as exc:
+        fail(f"invalid upstream role TOML for {role_name}: {exc}")
+    current_map = plain_value(current_doc)
+    candidate_map = plain_value(candidate_doc)
+    differences = {}
+    for key in sorted(set(current_map) | set(candidate_map)):
+        if key in {"model", "model_reasoning_effort"}:
+            continue
+        current_has = key in current_map
+        candidate_has = key in candidate_map
+        before = current_map.get(key)
+        after = candidate_map.get(key)
+        if current_has != candidate_has or before != after:
+            differences[key] = {
+                "current": before if current_has else "<missing>",
+                "upstream": after if candidate_has else "<missing>",
+            }
+    return differences
+
+
+def run_upstream(repo: Path) -> dict[str, Any]:
+    """Fetch upstream main and preview role/skill differences without applying."""
+    identity = repository_identity(repo, require_clean=False)
+    urls = git_output(repo, "remote", "get-url", "--all", "upstream", check=False).splitlines()
+    if not urls or not all(_upstream_url_is_source(url) for url in urls):
+        fail("upstream preview requires the upstream remote to point to github.com/donvito/codex-astra-luna-orchestrator")
+    baseline = git_output(repo, "rev-parse", "--verify", "refs/heads/main^{commit}", check=False)
+    if not baseline:
+        fail("upstream preview requires the last-reviewed local main baseline; create/recover main before previewing")
+
+    # Fetch only the source branch into its remote-tracking ref; do not switch or merge branches.
+    git_output(repo, "fetch", "upstream", "refs/heads/main:refs/remotes/upstream/main")
+    candidate = git_output(repo, "rev-parse", "--verify", "refs/remotes/upstream/main")
+    local_contents = validate_source_tree(repo)
+    local_roles = {}
+    for role in ROLE_NAMES:
+        rel = Path("orchestrator/agents") / f"{role}.toml"
+        local_roles[role] = local_contents[rel]
+    role_diffs: dict[str, Any] = {}
+    for role in ROLE_NAMES:
+        rel = _profile_path(f"codex/agents/{role}.toml")
+        data = _git_bytes(repo, "show", f"{candidate}:{rel}")
+        reject_private_or_secret(Path(rel), data)
+        # Validate upstream structure using the already validated local model pair.
+        # The original upstream values remain untouched in the comparison below.
+        try:
+            candidate_doc = parse(data.decode("utf-8"))
+            current_doc = parse(local_roles[role].decode("utf-8"))
+        except (UnicodeDecodeError, ParseError) as exc:
+            fail(f"invalid upstream role TOML for {role}: {exc}")
+        candidate_doc["model"] = current_doc["model"]
+        candidate_doc["model_reasoning_effort"] = current_doc["model_reasoning_effort"]
+        validate_role(role, dumps(candidate_doc).encode("utf-8"))
+        difference = _role_differences(local_roles[role], data, role)
+        if difference:
+            role_diffs[rel] = difference
+
+    baseline_skill_path = _profile_path("agents/skills/astra-orchestrator/SKILL.md")
+    baseline_skill = _git_bytes(repo, "show", f"{baseline}:{baseline_skill_path}")
+    candidate_skill = _git_bytes(repo, "show", f"{candidate}:{baseline_skill_path}")
+    for commit_label, data in (("main", baseline_skill), ("upstream/main", candidate_skill)):
+        reject_private_or_secret(Path(baseline_skill_path), data)
+        if not data.strip():
+            fail(f"missing or empty skill in {commit_label}: {baseline_skill_path}")
+    try:
+        baseline_text = baseline_skill.decode("utf-8")
+        candidate_text = candidate_skill.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        fail(f"upstream skill is not UTF-8: {exc}")
+    skill_diff = list(difflib.unified_diff(
+        baseline_text.splitlines(),
+        candidate_text.splitlines(),
+        fromfile=f"main:{baseline_skill_path}",
+        tofile=f"upstream/main:{baseline_skill_path}",
+        lineterm="",
+    ))
+    return {
+        "status": "preview",
+        "branch": identity["branch"],
+        "baseline_commit": baseline,
+        "candidate_commit": candidate,
+        "role_diffs": role_diffs,
+        "skill_diff": skill_diff,
+        "note": "Preview only; no checkout, merge, source edit, install, or local branch update was performed.",
+    }
 
 
 def plain_value(value: Any) -> Any:
@@ -1206,13 +1348,15 @@ def add_common_options(parser: argparse.ArgumentParser) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("validate", "plan", "apply", "status", "sync", "compatibility"):
+    for name in ("validate", "plan", "apply", "status", "sync", "upstream", "compatibility"):
         child = sub.add_parser(name)
         add_common_options(child)
         if name == "apply":
             child.add_argument("--bootstrap-baseline")
         if name == "compatibility":
-            child.add_argument("--model-catalog", required=True, help="Current local Codex JSON catalog; read-only")
+            catalog = child.add_mutually_exclusive_group(required=True)
+            catalog.add_argument("--model-catalog", help="Current local Codex JSON catalog; read-only")
+            catalog.add_argument("--refresh-catalog", action="store_true", help="Read the installed Codex catalog; read-only")
     args = parser.parse_args(argv)
     try:
         script = Path(__file__).resolve()
@@ -1226,8 +1370,11 @@ def main(argv: list[str] | None = None) -> int:
             result = run_status(repo, home)
         elif args.command == "sync":
             result = run_sync(repo)
+        elif args.command == "upstream":
+            result = run_upstream(repo)
         elif args.command == "compatibility":
-            result = run_compatibility(repo, Path(args.model_catalog).expanduser())
+            result = (run_fresh_compatibility(repo) if args.refresh_catalog
+                      else run_compatibility(repo, Path(args.model_catalog).expanduser()))
         else:
             result = run_apply(repo, home, args.bootstrap_baseline)
         print(json.dumps(result, indent=2, sort_keys=True))

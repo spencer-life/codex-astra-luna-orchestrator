@@ -21,6 +21,10 @@ run = "uv run --script scripts/orchestrator_sync.py status"
 description = "Fast-forward the committed personal branch from the fork"
 run = "uv run --script scripts/orchestrator_sync.py sync"
 
+[tasks."orchestrator:upstream"]
+description = "Fetch upstream main and preview role/skill changes"
+run = "uv run --script scripts/orchestrator_sync.py upstream"
+
 [tasks."orchestrator:test"]
 description = "Test guarded apply, receipt migration, validation, and usage reporting"
 run = "uv run --with pytest --with tomlkit==0.15.1 --with PyYAML==6.0.3 python -m pytest tests/test_orchestrator_sync.py tests/test_token_usage.py tests/test_routing_migration.py tests/test_usage_metrics.py"
@@ -30,5 +34,13 @@ description = "Report recorded usage, input sizes, tiers, and Standard-rate equi
 run = "uv run --no-project python scripts/token_usage.py"
 
 [tasks."orchestrator:compatibility"]
-description = "Check selections against a supplied local catalog; not a runtime invocation"
+description = "Check selections against a supplied or freshly read local model catalog"
 run = "uv run --script scripts/orchestrator_sync.py compatibility"
+
+[tasks."orchestrator:check"]
+description = "Run source validation, tests, and fresh local model compatibility"
+run = [
+  "mise run orchestrator:validate",
+  "mise run orchestrator:test",
+  "mise run orchestrator:compatibility -- --refresh-catalog",
+]

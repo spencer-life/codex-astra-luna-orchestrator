@@ -279,5 +279,174 @@ enabled = false
         self.assertTrue(list((self.home / ".local/state/astra-orchestrator/backups").iterdir()))
 
 
+class UpstreamAndFreshCatalogTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.repo = Path(self.temp.name) / "repo"
+        self.repo.mkdir()
+        shutil.copytree(ROOT / "orchestrator", self.repo / "orchestrator")
+        self.profile = self.repo / "profiles/GPT6-SolMedium-LunaMax"
+        (self.profile / "codex/agents").mkdir(parents=True)
+        skill_path = self.profile / "agents/skills/astra-orchestrator/SKILL.md"
+        skill_path.parent.mkdir(parents=True)
+        skill_path.write_bytes((self.repo / SYNC.SKILL_PATH).read_bytes())
+        for role in SYNC.ROLE_NAMES:
+            source = self.repo / "orchestrator/agents" / f"{role}.toml"
+            (self.profile / "codex/agents" / f"{role}.toml").write_bytes(source.read_bytes())
+        (self.profile / "codex/config.toml").write_text("model = 'gpt-6.1-sol'\n", encoding="utf-8")
+        self._git("init", "-b", "personal")
+        self._git("config", "user.email", "test@example.invalid")
+        self._git("config", "user.name", "Test")
+        self._git("remote", "add", "upstream", "https://github.com/donvito/codex-astra-luna-orchestrator.git")
+        self._git("add", "orchestrator", "profiles")
+        self._git("commit", "-m", "baseline")
+        self._git("branch", "main")
+        self.base_commit = self._git("rev-parse", "HEAD").stdout.strip()
+        self._git("checkout", "-b", "candidate-build")
+        reviewer = self.profile / "codex/agents/reviewer.toml"
+        reviewer_text = reviewer.read_text(encoding="utf-8")
+        reviewer_lines = reviewer_text.splitlines()
+        for index, line in enumerate(reviewer_lines):
+            if line.startswith("description = "):
+                reviewer_lines[index] = 'description = "Updated reviewer guidance"'
+            elif line.startswith("model = "):
+                reviewer_lines[index] = 'model = "future-model"'
+            elif line.startswith("model_reasoning_effort = "):
+                reviewer_lines[index] = 'model_reasoning_effort = "max"'
+        reviewer.write_text("\n".join(reviewer_lines) + "\n", encoding="utf-8")
+        skill_path.write_text(skill_path.read_text(encoding="utf-8") + "\nNew upstream instruction.\n", encoding="utf-8")
+        self._git("add", "profiles")
+        self._git("commit", "-m", "upstream candidate")
+        self.candidate_commit = self._git("rev-parse", "HEAD").stdout.strip()
+        self._git("checkout", "personal")
+        self._git("update-ref", "refs/remotes/upstream/main", self.candidate_commit)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.repo, check=True, capture_output=True, text=True)
+
+    def test_upstream_preview_ignores_only_role_models_and_uses_reviewed_skill_baseline(self):
+        local_skill = self.repo / SYNC.SKILL_PATH
+        local_skill.write_text(local_skill.read_text(encoding="utf-8") + "\nPersonal topology marker.\n", encoding="utf-8")
+        before_head = self._git("rev-parse", "HEAD").stdout.strip()
+        fetches = []
+        original_git_output = SYNC.git_output
+
+        def fake_git_output(repo, *args, **kwargs):
+            if args and args[0] == "fetch":
+                fetches.append(args)
+                return ""
+            return original_git_output(repo, *args, **kwargs)
+
+        with mock.patch.object(SYNC, "git_output", side_effect=fake_git_output):
+            result = SYNC.run_upstream(self.repo)
+        self.assertEqual(fetches, [("fetch", "upstream", "refs/heads/main:refs/remotes/upstream/main")])
+        self.assertEqual(result["baseline_commit"], self.base_commit)
+        self.assertEqual(result["candidate_commit"], self.candidate_commit)
+        reviewer = result["role_diffs"]["profiles/GPT6-SolMedium-LunaMax/codex/agents/reviewer.toml"]
+        self.assertIn("description", reviewer)
+        self.assertNotIn("model", reviewer)
+        self.assertNotIn("model_reasoning_effort", reviewer)
+        self.assertIn("New upstream instruction.", "\n".join(result["skill_diff"]))
+        self.assertNotIn("Personal topology marker.", "\n".join(result["skill_diff"]))
+        self.assertEqual(self._git("rev-parse", "HEAD").stdout.strip(), before_head)
+        self.assertEqual(self._git("branch", "--show-current").stdout.strip(), "personal")
+        self.assertTrue((self.repo / SYNC.SKILL_PATH).read_text(encoding="utf-8").endswith("Personal topology marker.\n"))
+
+    def test_upstream_preview_rejects_wrong_remote_and_missing_baseline_or_role(self):
+        self._git("remote", "set-url", "upstream", "https://github.com/someone/other.git")
+        with self.assertRaisesRegex(SYNC.SyncError, "upstream remote"):
+            SYNC.run_upstream(self.repo)
+        self._git("remote", "set-url", "upstream", "git@github.com:donvito/codex-astra-luna-orchestrator.git")
+        self._git("update-ref", "-d", "refs/heads/main")
+        with self.assertRaisesRegex(SYNC.SyncError, "last-reviewed local main baseline"):
+            SYNC.run_upstream(self.repo)
+        self._git("update-ref", "refs/heads/main", self.base_commit)
+        self._git("update-ref", "refs/remotes/upstream/main", self.candidate_commit)
+        self._git("update-ref", "refs/remotes/upstream/main", self.candidate_commit)
+        original = SYNC.git_output
+
+        def fetch_without_update(repo, *args, **kwargs):
+            if args and args[0] == "fetch":
+                return ""
+            return original(repo, *args, **kwargs)
+
+        self._git("checkout", "candidate-build")
+        (self.profile / "codex/agents/tester.toml").unlink()
+        self._git("add", "-u", "profiles")
+        self._git("commit", "-m", "remove candidate role")
+        missing_role_candidate = self._git("rev-parse", "HEAD").stdout.strip()
+        self._git("checkout", "personal")
+        self._git("update-ref", "refs/remotes/upstream/main", missing_role_candidate)
+        with mock.patch.object(SYNC, "git_output", side_effect=fetch_without_update):
+            with self.assertRaisesRegex(SYNC.SyncError, "git show .*tester.toml failed"):
+                SYNC.run_upstream(self.repo)
+        self._git("checkout", "candidate-build")
+        self._git("checkout", self.base_commit, "--", "profiles/GPT6-SolMedium-LunaMax/codex/agents/tester.toml")
+        reviewer = self.profile / "codex/agents/reviewer.toml"
+        reviewer.write_text(reviewer.read_text(encoding="utf-8") + "\nunsupported_option = true\n", encoding="utf-8")
+        self._git("add", "profiles")
+        self._git("commit", "-m", "add unsupported candidate role key")
+        invalid_candidate = self._git("rev-parse", "HEAD").stdout.strip()
+        self._git("checkout", "personal")
+        self._git("update-ref", "refs/remotes/upstream/main", invalid_candidate)
+        with mock.patch.object(SYNC, "git_output", side_effect=fetch_without_update):
+            with self.assertRaisesRegex(SYNC.SyncError, "contains unsupported keys"):
+                SYNC.run_upstream(self.repo)
+
+    def test_fresh_compatibility_uses_codex_output_and_removes_private_catalog(self):
+        contents = SYNC.validate_source_tree(self.repo)
+        pairs = {(SYNC.source_settings(contents)["model"], SYNC.source_settings(contents)["model_reasoning_effort"])}
+        settings = SYNC.source_settings(contents)
+        pairs.add((settings["agents"]["default_subagent_model"], settings["agents"]["default_subagent_reasoning_effort"]))
+        for role in SYNC.ROLE_NAMES:
+            data = SYNC.parse((self.repo / "orchestrator/agents" / f"{role}.toml").read_text(encoding="utf-8"))
+            pairs.add((data["model"], data["model_reasoning_effort"]))
+        catalog = json.dumps({"models": [
+            {"slug": model, "supported_reasoning_levels": [{"effort": effort} for effort in sorted({e for m, e in pairs if m == model})]}
+            for model in sorted({m for m, _ in pairs})
+        ]})
+        calls = []
+
+        def fake_run(command, **kwargs):
+            calls.append(command)
+            if command[-1] == "--help":
+                return subprocess.CompletedProcess(command, 0, "Usage: codex debug\n  models  list available models", "")
+            return subprocess.CompletedProcess(command, 0, catalog, "")
+
+        actual = SYNC.run_compatibility
+        catalog_paths = []
+
+        def record_catalog(repo, path):
+            catalog_paths.append(path)
+            self.assertTrue(path.exists())
+            return actual(repo, path)
+
+        with mock.patch.object(SYNC.subprocess, "run", side_effect=fake_run), mock.patch.object(
+            SYNC, "run_compatibility", side_effect=record_catalog
+        ):
+            result = SYNC.run_fresh_compatibility(self.repo)
+        self.assertEqual(result["status"], "catalog-compatible")
+        self.assertEqual(calls, [["codex", "debug", "--help"], ["codex", "debug", "models"]])
+        self.assertEqual(len(catalog_paths), 1)
+        self.assertFalse(catalog_paths[0].exists())
+
+    def test_fresh_compatibility_never_falls_back_when_cli_catalog_fails(self):
+        def fake_run(command, **kwargs):
+            if command[-1] == "--help":
+                return subprocess.CompletedProcess(command, 0, "  models  list available models", "")
+            return subprocess.CompletedProcess(command, 1, "stale catalog must not be used", "failed")
+
+        with mock.patch.object(SYNC.subprocess, "run", side_effect=fake_run):
+            with self.assertRaisesRegex(SYNC.SyncError, "no cached catalog was used"):
+                SYNC.run_fresh_compatibility(self.repo)
+
+        with mock.patch.object(SYNC.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "debug help only", "")):
+            with self.assertRaisesRegex(SYNC.SyncError, "does not advertise"):
+                SYNC.run_fresh_compatibility(self.repo)
+
+
 if __name__ == "__main__":
     unittest.main()

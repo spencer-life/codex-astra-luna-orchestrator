@@ -85,9 +85,7 @@ Prerequisites are Git, mise, and uv. In the maintained local `personal` checkout
 ```sh
 mise trust
 mise run orchestrator:sync
-mise run orchestrator:validate
-mise run orchestrator:test
-mise run orchestrator:compatibility --model-catalog /path/to/current-model-catalog.json
+mise run orchestrator:check
 mise run orchestrator:plan
 # Review and commit local edits before applying them.
 mise run orchestrator:apply
@@ -105,6 +103,13 @@ maintenance reference for the recovery procedure.
 an unmerged PR. For remote candidates, review and test their branch first, then merge
 approved changes into `personal`. A plan requires the maintained checkout identity;
 do not bypass the branch guard to install a feature branch.
+
+`orchestrator:check` runs source validation, the existing test suite, and compatibility
+against a freshly captured `codex debug models` catalog. It verifies that the installed
+CLI exposes that command and removes the temporary catalog afterward. It does not
+apply files or run a model request. The standalone validation, test, and compatibility
+tasks remain available; `orchestrator:compatibility -- --model-catalog PATH` accepts
+an explicitly supplied catalog, and `--refresh-catalog` captures a new one.
 
 The source validator uses the documented model/effort matrix checked **2026-09-29**.
 That is structural evidence, not proof of account availability. Before installing new
@@ -174,6 +179,15 @@ selection already active in a thread.
 
 `origin` is this fork; `upstream` is
 `https://github.com/donvito/codex-astra-luna-orchestrator.git`.
-Keep `main` upstream-only. Review upstream fixes separately and port only approved
-changes to `personal`; never merge `personal` into `main` or automatically apply
-upstream templates.
+Run `mise run orchestrator:upstream` to fetch the original `upstream/main` and
+preview changes without modifying maintained or installed files. Role comparisons
+exclude only `model` and `model_reasoning_effort`; every other role field is compared.
+The skill comparison uses local `main` as the last-reviewed upstream snapshot,
+so personal model/effort topology and maintenance links do not create repeated diffs.
+The preview reports the exact baseline and candidate commits.
+
+Keep `main` upstream-only. After porting reviewed skill changes and committing them
+on `personal`, advance local `main` to the reviewed upstream commit. Leave that
+baseline unchanged while skill updates are deferred. Record the imported upstream
+commit in the provenance above. Never merge `personal` into `main` or automatically
+install upstream templates.

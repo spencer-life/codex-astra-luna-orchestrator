@@ -11,8 +11,9 @@ The maintained personal source is:
 - `orchestrator/config.toml`: default root, experimental context management, and
   four owned `[agents]` settings.
 - `orchestrator/agents/*.toml`: five explicitly configured specialist roles.
-- `orchestrator/skills/astra-orchestrator/SKILL.md`: the compact **Codex
-  Orchestrator** routing skill. The legacy skill id/path is retained for compatibility.
+- `orchestrator/skills/astra-orchestrator/SKILL.md`: the maintained upstream
+  Astra Orchestrator skill, adapted only to this setup's active-root behavior,
+  configured model efforts, and reference links.
 - `references/maintenance.md` and `references/semble.md`: on-demand guidance.
 - `scripts/orchestrator_sync.py`, `mise.toml`, and tests: guarded maintenance.
 - `scripts/token_usage.py` and `PERFORMANCE.md`: read-only metrics and limits.
@@ -33,21 +34,15 @@ Configured specialists:
 - researcher: GPT-6 Luna Medium, read-only
 - worker: GPT-6 Luna High, workspace-write
 - tester: GPT-6 Luna High, workspace-write
-- reviewer: GPT-6.1 Sol Medium, read-only
+- reviewer: GPT-6.1 Sol High, read-only
 - generic fallback: GPT-6 Luna High
 
-The routing skill uses a hard delegation gate for substantive work. Repository
-exploration, unknown implementation surfaces, multi-file/module inspection,
-cross-component tracing, version-specific research, separable implementation and
-verification, materially useful independent review, and explicit delegation requests
-trigger a real specialist spawn. Substantive read-only repository discovery belongs
-to the Luna Medium explorer; the root keeps architecture, integration, and trivial
-known-location reads.
-
-There is no solver or Semble-search subagent. Hard architecture or ambiguous
-cross-component reasoning stays with the root; once direction is clear, the worker
-owns the bounded implementation. Semble is called directly through its MCP/CLI by
-the role that needs discovery.
+The maintained skill is based on upstream `donvito/codex-astra-luna-orchestrator`
+commit `f5efba0`, file
+`profiles/GPT6-SolMedium-LunaMax/agents/skills/astra-orchestrator/SKILL.md`.
+The source skill was adapted to preserve this setup's active-root behavior and
+configured specialist efforts, set the reviewer to GPT-6.1 Sol High, and link the
+two repository reference files required by source validation.
 
 Keep at most four spawned threads open. The cap is capacity, not a target. No
 `max_depth` setting is managed in v3; current Codex documents that setting as

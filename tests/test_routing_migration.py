@@ -322,7 +322,7 @@ class SourceValidationTests(unittest.TestCase):
             "worker": ("gpt-6-luna", "high"),
             "tester": ("gpt-6-luna", "high"),
             "researcher": ("gpt-6-luna", "medium"),
-            "reviewer": ("gpt-6.1-sol", "medium"),
+            "reviewer": ("gpt-6.1-sol", "high"),
         }
         for role, pair in expected.items():
             doc = sync.parse(source[Path(f"orchestrator/agents/{role}.toml")].decode())
@@ -340,15 +340,12 @@ class SourceValidationTests(unittest.TestCase):
         self.assertFalse((self.repo / "orchestrator/agents/solver.toml").exists())
         self.assertFalse((self.repo / "orchestrator/agents/semble-search.toml").exists())
 
-    def test_hard_delegation_gate_is_pinned(self):
+    def test_delegation_guidance_matches_configured_roles(self):
         skill = (self.repo / sync.SKILL_PATH).read_text()
-        for phrase in (
-            "## Delegation gate",
-            "The root MUST spawn the appropriate specialist",
-            "repository exploration is needed before implementation or diagnosis",
-            "For substantive read-only repository discovery, spawn `explorer` immediately",
-        ):
-            self.assertIn(phrase, skill)
+        self.assertIn("root: active session; maintained default `gpt-6.1-sol` at `high`", skill)
+        self.assertIn("reviewer: `gpt-6.1-sol` at `high` reasoning", skill)
+        self.assertIn("worker and tester: `gpt-6-luna` at `high` reasoning", skill)
+        self.assertIn("delegate bounded tasks to specialized agents when available", skill)
 
     def test_invalid_effort_and_unknown_model_refused(self):
         for pair in [
@@ -370,7 +367,7 @@ class SourceValidationTests(unittest.TestCase):
                 "name: astra-orchestrator",
                 "name: astra-orchestrator\nname: astra-orchestrator",
             ),
-            original.replace("description: Route", "description: [Route"),
+            original.replace("description: Orchestrate", "description: [Orchestrate"),
         ]
         for change in changes:
             skill.write_text(change)

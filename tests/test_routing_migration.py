@@ -132,7 +132,7 @@ keep = "unrelated"
             [
                 ".agents/skills/astra-orchestrator/references/maintenance.md",
                 ".agents/skills/astra-orchestrator/references/semble.md",
-                ".codex/agents/visual_qa.toml",
+                ".codex/agents/ui_specialist.toml",
             ],
         )
         self.assertEqual(
@@ -171,7 +171,7 @@ keep = "unrelated"
         self.install_receipt(2)
         plan = sync.run_plan(self.repo, self.home)
         self.assertEqual(plan["migration"], "v2-to-v4")
-        self.assertEqual(plan["new_files"], [".codex/agents/visual_qa.toml"])
+        self.assertEqual(plan["new_files"], [".codex/agents/ui_specialist.toml"])
         self.assertEqual(
             plan["removed_files"],
             [".codex/agents/semble-search.toml", ".codex/agents/solver.toml"],
@@ -190,11 +190,11 @@ keep = "unrelated"
 
     def test_v3_migration_adds_terra_and_reapply_is_idempotent(self):
         _, before, receipt_before = self.install_receipt(3)
-        terra_path = self.home / ".codex/agents/visual_qa.toml"
+        terra_path = self.home / ".codex/agents/ui_specialist.toml"
         self.assertFalse(terra_path.exists())
         plan = sync.run_plan(self.repo, self.home)
         self.assertEqual(plan["migration"], "v3-to-v4")
-        self.assertEqual(plan["new_files"], [".codex/agents/visual_qa.toml"])
+        self.assertEqual(plan["new_files"], [".codex/agents/ui_specialist.toml"])
         self.assertEqual(plan["removed_files"], [])
         self.assertEqual(plan["removed_settings"], [])
         self.assertEqual(self.state_path.read_bytes(), receipt_before)
@@ -203,18 +203,18 @@ keep = "unrelated"
         state = json.loads(self.state_path.read_text())
         self.assertEqual(state["version"], 4)
         self.assertEqual(len(state["installed_hashes"]), 10)
-        self.assertEqual(terra_path.read_bytes(), (self.repo / "orchestrator/agents/visual_qa.toml").read_bytes())
+        self.assertEqual(terra_path.read_bytes(), (self.repo / "orchestrator/agents/ui_specialist.toml").read_bytes())
         self.assertEqual(stat.S_IMODE(terra_path.stat().st_mode), 0o600)
         self.assertEqual((self.home / ".codex/config.toml").read_bytes(), before[self.home / ".codex/config.toml"])
         self.assert_current_config()
         self.assertEqual(sync.run_apply(self.repo, self.home, None)["status"], "already-applied")
         self.assertEqual(sync.run_plan(self.repo, self.home)["changes"], [])
         manifest = json.loads((Path(result["backup"]) / "manifest.json").read_text())
-        self.assertTrue(manifest["files"][".codex/agents/visual_qa.toml"]["absent"])
+        self.assertTrue(manifest["files"][".codex/agents/ui_specialist.toml"]["absent"])
 
     def test_v3_existing_terra_destination_is_refused(self):
         _, _, receipt_before = self.install_receipt(3)
-        terra = self.home / ".codex/agents/visual_qa.toml"
+        terra = self.home / ".codex/agents/ui_specialist.toml"
         terra.write_text("local file must be preserved\n")
         with self.assertRaisesRegex(sync.SyncError, "already exists"):
             sync.run_plan(self.repo, self.home)
@@ -236,7 +236,7 @@ keep = "unrelated"
         with mock.patch.object(sync, "write_atomic", side_effect=fail_receipt):
             with self.assertRaisesRegex(sync.SyncError, "rolled back"):
                 sync.run_apply(self.repo, self.home, None)
-        self.assertFalse((self.home / ".codex/agents/visual_qa.toml").exists())
+        self.assertFalse((self.home / ".codex/agents/ui_specialist.toml").exists())
         for path, data in before.items():
             self.assertEqual(path.read_bytes(), data)
         self.assertEqual(self.state_path.read_bytes(), receipt_before)
@@ -324,7 +324,7 @@ keep = "unrelated"
         for path, data in before.items():
             self.assertEqual(path.read_bytes(), data)
         self.assertEqual(self.state_path.read_bytes(), receipt_before)
-        self.assertFalse((self.home / ".codex/agents/visual_qa.toml").exists())
+        self.assertFalse((self.home / ".codex/agents/ui_specialist.toml").exists())
 
     def test_retired_collision_does_not_destroy_other_rollback_work(self):
         self.install_receipt(2)
@@ -385,7 +385,7 @@ class SourceValidationTests(unittest.TestCase):
             "tester": ("gpt-6-luna", "high"),
             "researcher": ("gpt-6-luna", "medium"),
             "reviewer": ("gpt-6.1-sol", "high"),
-            "visual_qa": ("gpt-6.1-terra", "xhigh"),
+            "ui_specialist": ("gpt-6.1-terra", "xhigh"),
         }
         for role, pair in expected.items():
             doc = sync.parse(source[Path(f"orchestrator/agents/{role}.toml")].decode())
@@ -408,8 +408,28 @@ class SourceValidationTests(unittest.TestCase):
         self.assertIn("root: active session; maintained default `gpt-6.1-sol` at `high`", skill)
         self.assertIn("reviewer: `gpt-6.1-sol` at `high` reasoning", skill)
         self.assertIn("worker and tester: `gpt-6-luna` at `high` reasoning", skill)
-        self.assertIn("visual_qa: `gpt-6.1-terra` at `xhigh` reasoning", skill)
+        self.assertIn("ui_specialist: `gpt-6.1-terra` at `xhigh` reasoning", skill)
         self.assertIn("delegate bounded tasks to specialized agents when available", skill)
+
+    def test_ui_specialist_modes_and_inherited_permissions(self):
+        source = sync.validate_source_tree(self.repo)
+        role = sync.parse(source[Path("orchestrator/agents/ui_specialist.toml")].decode())
+        instructions = role["developer_instructions"]
+        self.assertNotIn("sandbox_mode", role)
+        self.assertEqual((role["model"], role["model_reasoning_effort"]),
+                         ("gpt-6.1-terra", "xhigh"))
+        self.assertIn("mode=inspection (default)", instructions)
+        self.assertIn("mode=implementation (only on explicit delegation", instructions)
+        self.assertIn("default to mode=inspection", instructions)
+        self.assertIn("Do not edit project source", instructions)
+        self.assertIn("Edit only delegated project files", instructions)
+        self.assertIn("inherits the parent sandbox", instructions)
+        skill = source[sync.SKILL_PATH].decode()
+        self.assertIn("ui_specialist: `gpt-6.1-terra` at `xhigh` reasoning", skill)
+        self.assertIn("mode=inspection (default)", skill)
+        self.assertIn("mode=implementation", skill)
+        self.assertIn("fresh", skill.lower())
+        self.assertFalse((self.repo / "orchestrator/agents/visual_qa.toml").exists())
 
     def test_invalid_effort_and_unknown_model_refused(self):
         for pair in [
@@ -468,7 +488,7 @@ class SourceValidationTests(unittest.TestCase):
             if model["slug"] == "gpt-6.1-terra":
                 model["supported_reasoning_levels"] = [{"effort": "high"}]
         path.write_text(json.dumps(payload))
-        with self.assertRaisesRegex(sync.SyncError, "visual_qa: gpt-6.1-terra/xhigh"):
+        with self.assertRaisesRegex(sync.SyncError, "ui_specialist: gpt-6.1-terra/xhigh"):
             sync.run_compatibility(self.repo, path)
 
         payload["models"] = [m for m in payload["models"] if m["slug"] != "gpt-6.1-sol"]

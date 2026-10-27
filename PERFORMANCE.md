@@ -15,12 +15,13 @@ The v4 routing policy is:
 | worker | GPT-6 Luna High |
 | tester | GPT-6 Luna High |
 | reviewer | GPT-6.1 Sol High |
-| visual_qa | GPT-6.1 Terra Extra High (`xhigh`), read-only |
+| ui_specialist | GPT-6.1 Terra Extra High (`xhigh`); inspection by default, scoped UI implementation on delegation |
 | generic fallback | GPT-6 Luna High |
 
 Semble is a direct MCP/CLI tool, not a subagent. Spawned concurrency is capped at
-four. Experimental context management is enabled. Terra is a deliberately
-selected visual/browser specialist, not the generic default. No solver,
+four. Experimental context management is enabled. Terra is one opt-in
+browser/computer-use/frontend specialist with explicit inspection and
+implementation task modes, not the generic default. No solver,
 Semble-search agent, forced Fast mode, or dynamic model router is added.
 Max reasoning is not part of the root or reviewer defaults.
 

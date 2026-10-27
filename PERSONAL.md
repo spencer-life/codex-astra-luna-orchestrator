@@ -35,7 +35,7 @@ Configured specialists:
 - worker: GPT-6 Luna High, workspace-write
 - tester: GPT-6 Luna High, workspace-write
 - reviewer: GPT-6.1 Sol High, read-only
-- visual_qa: GPT-6.1 Terra Extra High (`xhigh`), read-only
+- ui_specialist: GPT-6.1 Terra Extra High (`xhigh`), inspection-only by default; scoped project edits when implementation is expressly delegated
 - generic fallback: GPT-6 Luna High
 
 The maintained skill is based on upstream `donvito/codex-astra-luna-orchestrator`
@@ -49,7 +49,7 @@ The original five role files in `orchestrator/agents/` follow upstream profile
 `profiles/GPT6-SolMedium-LunaMax/codex/agents/` at commit
 `f5efba0f957a1e3f0671e629ccc2c655725a7e7b`. They retain only this setup's
 current `model` and `model_reasoning_effort` values; all other role content
-comes directly from that upstream profile. The additional `visual_qa` role is
+comes directly from that upstream profile. The additional `ui_specialist` role is
 personal, not part of the upstream profile; upstream comparisons intentionally
 inspect only the original five roles.
 
@@ -72,8 +72,9 @@ do not claim cache or compaction behavior that was not actually observed.
 The public repository does not own `default_permissions`, named `[permissions]`
 profiles such as Workspace Tools, Auto-review/approval configuration, MCP/plugin
 settings, service tier, or sandbox policy. Current custom agents inherit the
-parent sandbox and permissions; read-only role guidance is instructional,
-not an enforceable per-agent sandbox override.
+parent sandbox and permissions; inspection-mode no-edit instructions and
+implementation-mode file scopes are instructional, not separate sandbox
+restrictions. The root must delegate UI implementation explicitly.
 The merge/apply path preserves them.
 
 The previous v3 setup was validated with Codex CLI **0.156.1**. GPT-6.1 Terra
@@ -125,7 +126,7 @@ unavailable model.
 ## Receipt version 4 migration
 
 The v4 source contains **ten managed files**: one config fragment, six roles
-(including Terra `visual_qa`), one skill, and two references.
+(including Terra `ui_specialist`), one skill, and two references.
 
 ### From receipt v1
 
@@ -152,7 +153,7 @@ A direct v2-to-v4 migration:
 
 ### From receipt v3
 
-A direct v3-to-v4 migration adds Terra `visual_qa.toml` only if that destination
+A direct v3-to-v4 migration adds Terra `ui_specialist.toml` only if that destination
 is absent. Existing v3 files, managed settings, and other local configuration
 are preserved or updated through the same guarded process.
 

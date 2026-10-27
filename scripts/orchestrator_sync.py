@@ -66,7 +66,7 @@ UPSTREAM_ROLE_NAMES = (
     "reviewer",
 )
 # Personal roles may not exist in the original upstream profile.
-ROLE_NAMES = (*UPSTREAM_ROLE_NAMES, "visual_qa")
+ROLE_NAMES = (*UPSTREAM_ROLE_NAMES, "ui_specialist")
 SKILL_PATH = Path("orchestrator/skills/astra-orchestrator/SKILL.md")
 REFERENCE_NAMES = ("maintenance.md", "semble.md")
 REFERENCE_FILES = tuple(SKILL_PATH.parent / "references" / name for name in REFERENCE_NAMES)
@@ -135,7 +135,7 @@ V2_DESTINATIONS.update({
 })
 V3_DESTINATIONS = {
     source: dest for source, dest in DESTINATIONS.items()
-    if source != Path("orchestrator/agents/visual_qa.toml")
+    if source != Path("orchestrator/agents/ui_specialist.toml")
 }
 DESTINATIONS_BY_VERSION = {
     1: V1_DESTINATIONS,
@@ -144,7 +144,7 @@ DESTINATIONS_BY_VERSION = {
     4: DESTINATIONS,
 }
 V1_ADDED_SOURCES = set(REFERENCE_FILES)
-V4_ADDED_SOURCES = {Path("orchestrator/agents/visual_qa.toml")}
+V4_ADDED_SOURCES = {Path("orchestrator/agents/ui_specialist.toml")}
 MIGRATION_RETIREMENTS = {
     1: {
         Path(".codex/agents/research_verifier.toml"),

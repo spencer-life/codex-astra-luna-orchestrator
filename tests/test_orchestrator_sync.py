@@ -349,7 +349,7 @@ class UpstreamAndFreshCatalogTests(unittest.TestCase):
         self.assertIn("description", reviewer)
         self.assertNotIn("model", reviewer)
         self.assertNotIn("model_reasoning_effort", reviewer)
-        self.assertFalse(any("visual_qa" in path for path in result["role_diffs"]))
+        self.assertFalse(any("ui_specialist" in path for path in result["role_diffs"]))
         self.assertIn("New upstream instruction.", "\n".join(result["skill_diff"]))
         self.assertNotIn("Personal topology marker.", "\n".join(result["skill_diff"]))
         self.assertEqual(self._git("rev-parse", "HEAD").stdout.strip(), before_head)

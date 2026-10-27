@@ -22,10 +22,12 @@ The default root is GPT-6.1 Sol at high reasoning. A model or effort selected in
 Codex picker/CLI remains the active root for that session, so a Luna-only session is
 supported without rewriting the shared configuration. Explorer/researcher use GPT-6
 Luna Medium; worker/tester and generic fallback use GPT-6 Luna High; Terra
-visual_qa uses GPT-6.1 Terra Extra High in read-only visual/browser QA; the
-independent read-only reviewer uses GPT-6.1 Sol High. Spawned concurrency is capped
-at four. Terra is instructed not to edit; its actual sandbox permissions
-are inherited from the parent Codex session.
+ui_specialist uses GPT-6.1 Terra Extra High for computer-use, default no-edit
+inspection, and explicitly delegated scoped UI implementation; the independent
+no-edit reviewer uses GPT-6.1 Sol High. Spawned concurrency is capped
+at four. Terra edits project files only in explicitly delegated implementation
+mode; inspection is the default. Actual tool permissions and sandboxing are
+inherited from the parent Codex session.
 
 The routing skill and role instructions follow the original upstream templates,
 with personal model and effort selections retained. The root owns architecture,
@@ -39,7 +41,7 @@ setting.
 
 The v4 maintained source contains **ten files**: one config fragment, six role files,
 one routing skill, and two on-demand references. Guarded migration supports v1,
-v2, and v3 receipts, adds Terra without overwriting pre-existing files, retires
+v2, and v3 receipts, adds the single Terra specialist without overwriting pre-existing files, retires
 obsolete roles for v1/v2, and preserves unrelated local configuration.
 
 The repository deliberately does **not** own the full `~/.codex/config.toml`.

@@ -409,7 +409,7 @@ class SourceValidationTests(unittest.TestCase):
         self.assertIn("reviewer: `gpt-6.1-sol` at `high` reasoning", skill)
         self.assertIn("worker and tester: `gpt-6-luna` at `high` reasoning", skill)
         self.assertIn("ui_specialist: `gpt-6.1-terra` at `xhigh` reasoning", skill)
-        self.assertIn("delegate bounded tasks to specialized agents when available", skill)
+        self.assertIn("Delegate bounded independent work when it improves", skill)
 
     def test_ui_specialist_modes_and_inherited_permissions(self):
         source = sync.validate_source_tree(self.repo)

@@ -13,7 +13,8 @@ by the parent orchestrator. The parent owns architecture and final integration.
 ## Operating modes
 The parent should supply mode=inspection or mode=implementation in each task.
 If the mode is missing, contradictory, or unclear, default to mode=inspection.
-Neither mode changes the parent session's sandbox, approvals, or capabilities.
+This agent inherits the parent sandbox, approvals, and available tools.
+Neither mode expands those privileges.
 
 mode=inspection (default):
 - Inspect the running product, screenshots, design references, code, and real

@@ -21,8 +21,10 @@ mise run orchestrator:status
 The default root is GPT-6.1 Sol at high reasoning. A model or effort selected in the
 Codex picker/CLI remains the active root for that session, so a Luna-only session is
 supported without rewriting the shared configuration. Explorer/researcher use GPT-6
-Luna Medium; worker/tester and generic fallback use GPT-6 Luna High; the independent
-read-only reviewer uses GPT-6.1 Sol High. Spawned concurrency is capped at four.
+Luna Medium; worker/tester and generic fallback use GPT-6 Luna High; Terra
+visual_qa uses GPT-6.1 Terra Extra High in read-only visual/browser QA; the
+independent read-only reviewer uses GPT-6.1 Sol High. Spawned concurrency is capped
+at four.
 
 The routing skill and role instructions follow the original upstream templates,
 with personal model and effort selections retained. The root owns architecture,
@@ -34,18 +36,19 @@ subagent. The maintained configuration enables experimental context management.
 `max_depth` is no longer managed because current Codex V2 ignores that V1-only
 setting.
 
-The v3 maintained source contains **nine files**: one config fragment, five role files,
-one routing skill, and two on-demand references. Guarded migration supports both v1
-and v2 receipts, retiring obsolete roles and the previously managed `max_depth`
-without overwriting unrelated local configuration.
+The v4 maintained source contains **ten files**: one config fragment, six role files,
+one routing skill, and two on-demand references. Guarded migration supports v1,
+v2, and v3 receipts, adds Terra without overwriting pre-existing files, retires
+obsolete roles for v1/v2, and preserves unrelated local configuration.
 
 The repository deliberately does **not** own the full `~/.codex/config.toml`.
 Workspace Tools permission profiles, Auto-review/approval choices, MCPs/plugins,
 service tier, audio devices, voice selection, desktop preferences, credentials, and
 machine-specific settings stay local.
 
-Codex CLI 0.156.1 is the recorded compatibility target for this migration. Voice conversations
-are enabled by default in that release; no portable voice flag is required here.
+Codex CLI 0.156.1 was the v3 validation target; the Terra role requires Codex CLI
+0.159.0 or newer and an available `gpt-6.1-terra/xhigh` catalog entry. Voice conversations
+were enabled in 0.156.1; no portable voice flag is required here.
 Machine-local audio and realtime preferences remain outside the managed fragment.
 
 The skill's filesystem path and frontmatter name remain `astra-orchestrator` for

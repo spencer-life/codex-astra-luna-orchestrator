@@ -25,23 +25,28 @@ Preserve any unique work durably before cleanup; never discard it as stale witho
 checking. Once the receipt-bound checkout is clean and current, run the guarded
 sync, validate, test, local-catalog compatibility, plan, apply, and status workflow.
 
-## v3 migration
+## v4 migration
 
-Receipt v3 has nine managed files: config, five roles, the skill, and two references.
+Receipt v4 has ten managed files: config, six roles (including Terra `visual_qa`),
+the skill, and two references.
 
-- v1 -> v3 adds the references and retires `research_verifier.toml` plus
+- v1 -> v4 adds the references and `visual_qa.toml`, retires
+  `research_verifier.toml` and `semble-search.toml`.
+- v2 -> v4 adds `visual_qa.toml`, retires `solver.toml` and
   `semble-search.toml`.
-- v2 -> v3 retires `solver.toml` plus `semble-search.toml`.
-- both legacy migrations retire the previously managed `agents.max_depth` setting.
+- v3 -> v4 adds only `visual_qa.toml`.
+- v1/v2 also retire the previously managed `agents.max_depth` setting.
 
-Retired files must still match their recorded receipt. New v1 reference destinations
-must be absent. Do not delete receipts or local files to defeat ownership guards.
+Every new managed destination must be absent; an existing Terra file is a collision,
+not permission to overwrite. Retired files must match their recorded receipts.
+The guarded apply backs up and rolls back new files as well as existing files.
+Do not delete receipts or local files to defeat ownership guards.
 Follow `PERSONAL.md` for deliberate reconciliation and rollback.
 
 ## Models and runtime compatibility
 
-The documented model/effort matrix was refreshed on 2026-09-29 to include GPT-6.1
-Sol, alongside GPT-6 Sol and Luna. `orchestrator:validate` checks structure and that
+The documented model/effort matrix was refreshed on 2026-10-26 to include GPT-6.1
+Terra `xhigh`, alongside GPT-6.1 Sol, GPT-6 Sol, and Luna. `orchestrator:validate` checks structure and that
 dated matrix; it does not prove account availability. On Codex CLI 0.156.1,
 `codex debug models` emits the raw local catalog JSON accepted by the compatibility
 check. It is a debug subcommand,
@@ -59,10 +64,11 @@ against a fresh local catalog, then verify effective root and spawned-role selec
 in a new session. Role files pin specialist model/effort. The root is the active
 primary-session model: an explicit picker or CLI choice is respected.
 
-This v3 setup was validated with Codex CLI **0.156.1**, whose local catalog
-advertised the configured GPT-6 Sol/Luna model and effort pairs. For future changes,
-use a current compatible stable Codex release and check its local catalog; 0.156.1 is
-the recorded validation version, not a permanent latest-version requirement. Audio
+The preceding v3 setup was validated with Codex CLI **0.156.1**.
+GPT-6.1 Terra requires Codex CLI **0.159.0 or later**; before applying v4,
+use an updated compatible stable release and require a fresh local catalog that
+advertises `gpt-6.1-terra/xhigh`. The previous validation is historical,
+not evidence of local v4 compatibility. Audio
 device settings are machine-local, and realtime configuration remains outside this
 managed fragment. Let Codex and the local client own those preferences.
 

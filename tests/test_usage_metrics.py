@@ -44,6 +44,7 @@ class UsageMetricsTests(unittest.TestCase):
         self.assertEqual(usage.standard_equivalent("gpt-6-astra", sample), 82.5)
         self.assertEqual(usage.standard_equivalent("gpt-6-sol", sample), 16.5)
         self.assertEqual(usage.standard_equivalent("gpt-6.1-sol", sample), 14.5)
+        self.assertEqual(usage.standard_equivalent("gpt-6.1-terra", sample), 7.25)
         self.assertEqual(usage.standard_equivalent("gpt-6-luna", sample), 0.825)
         self.assertEqual(usage.standard_equivalent("gpt-5.6-sol", sample), 33)
         self.assertEqual(usage.standard_equivalent("gpt-5.6-luna", sample), 1.7)
@@ -114,7 +115,7 @@ class UsageMetricsTests(unittest.TestCase):
         self.assertIsNotNone(summary["counted"]["complete_standard_equivalent"])
         self.assertIsNone(summary["all_recorded"]["complete_standard_equivalent"])
         self.assertEqual(summary["excluded_auto_review"]["unpriced_responses"], 1)
-        self.assertIn("2026-09-29", m["rate_card"]["checked"])
+        self.assertIn("2026-10-26", m["rate_card"]["checked"])
 
     def test_markdown_and_json_explain_standard_not_actual_rate(self):
         t = self.thread(events=[self.context(tier="fast"), self.response()])

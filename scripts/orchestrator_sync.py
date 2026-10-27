@@ -58,13 +58,15 @@ V2_ROLE_NAMES = (
     "semble-search",
     "solver",
 )
-ROLE_NAMES = (
+UPSTREAM_ROLE_NAMES = (
     "explorer",
     "worker",
     "tester",
     "researcher",
     "reviewer",
 )
+# Personal roles may not exist in the original upstream profile.
+ROLE_NAMES = (*UPSTREAM_ROLE_NAMES, "visual_qa")
 SKILL_PATH = Path("orchestrator/skills/astra-orchestrator/SKILL.md")
 REFERENCE_NAMES = ("maintenance.md", "semble.md")
 REFERENCE_FILES = tuple(SKILL_PATH.parent / "references" / name for name in REFERENCE_NAMES)
@@ -131,8 +133,18 @@ V2_DESTINATIONS.update({
     path: Path(".agents/skills/astra-orchestrator/references") / path.name
     for path in REFERENCE_FILES
 })
-DESTINATIONS_BY_VERSION = {1: V1_DESTINATIONS, 2: V2_DESTINATIONS, 3: DESTINATIONS}
+V3_DESTINATIONS = {
+    source: dest for source, dest in DESTINATIONS.items()
+    if source != Path("orchestrator/agents/visual_qa.toml")
+}
+DESTINATIONS_BY_VERSION = {
+    1: V1_DESTINATIONS,
+    2: V2_DESTINATIONS,
+    3: V3_DESTINATIONS,
+    4: DESTINATIONS,
+}
 V1_ADDED_SOURCES = set(REFERENCE_FILES)
+V4_ADDED_SOURCES = {Path("orchestrator/agents/visual_qa.toml")}
 MIGRATION_RETIREMENTS = {
     1: {
         Path(".codex/agents/research_verifier.toml"),
@@ -143,14 +155,15 @@ MIGRATION_RETIREMENTS = {
         Path(".codex/agents/semble-search.toml"),
     },
 }
-STATE_VERSION = 3
+STATE_VERSION = 4
 # Documentation snapshot, not an assertion about any account's live availability.
-# https://developers.openai.com/api/docs/models/gpt-6-{astra,sol,luna}
-MODEL_SUPPORT_CHECKED = "2026-09-29"
+# https://developers.openai.com/api/docs/models/gpt-6.1-terra
+MODEL_SUPPORT_CHECKED = "2026-10-26"
 REASONING_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 MODEL_EFFORTS = {
     "gpt-6-astra": REASONING_EFFORTS,
     "gpt-6.1-sol": REASONING_EFFORTS,
+    "gpt-6.1-terra": REASONING_EFFORTS | {"none"},
     "gpt-6-sol": REASONING_EFFORTS | {"none"},
     "gpt-6-luna": REASONING_EFFORTS | {"none"},
     **{
@@ -457,11 +470,11 @@ def run_upstream(repo: Path) -> dict[str, Any]:
     candidate = git_output(repo, "rev-parse", "--verify", "refs/remotes/upstream/main")
     local_contents = validate_source_tree(repo)
     local_roles = {}
-    for role in ROLE_NAMES:
+    for role in UPSTREAM_ROLE_NAMES:
         rel = Path("orchestrator/agents") / f"{role}.toml"
         local_roles[role] = local_contents[rel]
     role_diffs: dict[str, Any] = {}
-    for role in ROLE_NAMES:
+    for role in UPSTREAM_ROLE_NAMES:
         rel = _profile_path(f"codex/agents/{role}.toml")
         data = _git_bytes(repo, "show", f"{candidate}:{rel}")
         reject_private_or_secret(Path(rel), data)
@@ -765,15 +778,19 @@ def merged_config_bytes(
 
 
 def migration_additions(state: dict[str, Any] | None, home: Path) -> set[Path]:
-    if not state or state["version"] != 1:
+    if not state or state["version"] == STATE_VERSION:
         return set()
-    return {home / DESTINATIONS[path] for path in V1_ADDED_SOURCES}
+    # v1 also lacks skill references; v1/v2/v3 all lack the Terra role.
+    sources = set(V4_ADDED_SOURCES)
+    if state["version"] == 1:
+        sources.update(V1_ADDED_SOURCES)
+    return {home / DESTINATIONS[path] for path in sources}
 
 
 def migration_retirements(state: dict[str, Any] | None, home: Path) -> set[Path]:
     if not state or state["version"] == STATE_VERSION:
         return set()
-    return {home / path for path in MIGRATION_RETIREMENTS[state["version"]]}
+    return {home / path for path in MIGRATION_RETIREMENTS.get(state["version"], set())}
 
 
 def migration_label(state: dict[str, Any] | None) -> str | None:

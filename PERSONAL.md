@@ -10,7 +10,7 @@ The maintained personal source is:
 
 - `orchestrator/config.toml`: default root, experimental context management, and
   four owned `[agents]` settings.
-- `orchestrator/agents/*.toml`: five explicitly configured specialist roles.
+- `orchestrator/agents/*.toml`: six explicitly configured specialist roles.
 - `orchestrator/skills/astra-orchestrator/SKILL.md`: the maintained upstream
   Astra Orchestrator skill, adapted only to this setup's active-root behavior,
   configured model efforts, and reference links.
@@ -35,6 +35,7 @@ Configured specialists:
 - worker: GPT-6 Luna High, workspace-write
 - tester: GPT-6 Luna High, workspace-write
 - reviewer: GPT-6.1 Sol High, read-only
+- visual_qa: GPT-6.1 Terra Extra High (`xhigh`), read-only
 - generic fallback: GPT-6 Luna High
 
 The maintained skill is based on upstream `donvito/codex-astra-luna-orchestrator`
@@ -44,11 +45,13 @@ The source skill was adapted to preserve this setup's active-root behavior and
 configured specialist efforts, set the reviewer to GPT-6.1 Sol High, and link the
 two repository reference files required by source validation.
 
-The five role files in `orchestrator/agents/` follow upstream profile
+The original five role files in `orchestrator/agents/` follow upstream profile
 `profiles/GPT6-SolMedium-LunaMax/codex/agents/` at commit
 `f5efba0f957a1e3f0671e629ccc2c655725a7e7b`. They retain only this setup's
 current `model` and `model_reasoning_effort` values; all other role content
-comes directly from that upstream profile.
+comes directly from that upstream profile. The additional `visual_qa` role is
+personal, not part of the upstream profile; upstream comparisons intentionally
+inspect only the original five roles.
 
 Keep at most four spawned threads open. The cap is capacity, not a target. No
 `max_depth` setting is managed in v3; current Codex documents that setting as
@@ -71,10 +74,10 @@ profiles such as Workspace Tools, Auto-review/approval configuration, MCP/plugin
 settings, service tier, or sandbox policy outside the role-specific restrictions.
 The merge/apply path preserves them.
 
-This v3 setup was validated with Codex CLI **0.156.1**, whose local catalog
-advertised the configured GPT-6 Sol/Luna model and effort pairs. For future changes,
-use a current compatible stable Codex release and check its local catalog; 0.156.1 is
-the recorded validation version, not a permanent latest-version requirement. Audio
+The previous v3 setup was validated with Codex CLI **0.156.1**. GPT-6.1 Terra
+requires **Codex CLI 0.159.0 or later**. Before installing v4, confirm the
+installed CLI and a fresh local catalog advertise `gpt-6.1-terra/xhigh`;
+historical 0.156.1 compatibility does not establish v4 compatibility. Audio
 device and realtime preferences remain machine-local and are not added to this
 managed fragment.
 
@@ -111,22 +114,22 @@ apply files or run a model request. The standalone validation, test, and compati
 tasks remain available; `orchestrator:compatibility -- --model-catalog PATH` accepts
 an explicitly supplied catalog, and `--refresh-catalog` captures a new one.
 
-The source validator uses the documented model/effort matrix checked **2026-09-29**.
+The source validator uses the documented model/effort matrix checked **2026-10-26**.
 That is structural evidence, not proof of account availability. Before installing new
 model selections, run the compatibility check against a fresh local Codex model
 catalog and verify the effective selections in a new session. Never silently alias an
 unavailable model.
 
-## Receipt version 3 migration
+## Receipt version 4 migration
 
-The v3 source contains **nine managed files**: one config fragment, five roles, one
-skill, and two references.
+The v4 source contains **ten managed files**: one config fragment, six roles
+(including Terra `visual_qa`), one skill, and two references.
 
 ### From receipt v1
 
-A direct v1-to-v3 migration:
+A direct v1-to-v4 migration:
 
-- adds the two reference files only when their destinations are absent;
+- adds the two reference files and Terra visual QA role only when their destinations are absent;
 - retires `research_verifier.toml` and `semble-search.toml` only when they still
   match the v1 receipt;
 - retires the previously managed `agents.max_depth` setting;
@@ -136,13 +139,20 @@ It does **not** create the old v2 solver on the way through.
 
 ### From receipt v2
 
-A direct v2-to-v3 migration:
+A direct v2-to-v4 migration:
 
+- adds Terra visual QA role only when its destination is absent;
 - retires `solver.toml` and `semble-search.toml` only when they still match the
   v2 receipt;
 - retires the previously managed `agents.max_depth` setting;
 - keeps the already managed reference files;
 - updates the managed model/context/agent settings to v3.
+
+### From receipt v3
+
+A direct v3-to-v4 migration adds Terra `visual_qa.toml` only if that destination
+is absent. Existing v3 files, managed settings, and other local configuration
+are preserved or updated through the same guarded process.
 
 Existing-file drift, missing retired files, symlinks, and ownership collisions stop
 the migration. Apply backs up every affected path and the prior receipt before writes,

@@ -73,6 +73,13 @@ keep = "unrelated"
             target = self.home / dest
             target.parent.mkdir(parents=True, exist_ok=True)
             data = self._legacy_bytes(source)
+            if version == 3 and source == sync.SOURCE_CONFIG:
+                # Synthetic v3 receipts already include the v3 managed context
+                # settings; legacy v1/v2 receipts intentionally do not.
+                data = sync.merged_config_bytes(
+                    target, sync.source_settings(sync.validate_source_tree(self.repo)),
+                    self.legacy_config(), retire_max_depth=True
+                )
             source_bytes[source] = data
             target.write_bytes(data)
             target.chmod(0o600)
@@ -102,7 +109,7 @@ keep = "unrelated"
         }
         return state, before, self.state_path.read_bytes()
 
-    def assert_v3_config(self):
+    def assert_current_config(self):
         config = sync.read_installed_config(self.home / ".codex/config.toml")
         settings = sync.get_managed_settings(config)
         self.assertEqual(settings["model"], "gpt-6.1-sol")
@@ -119,12 +126,13 @@ keep = "unrelated"
     def test_v1_migration_plan_apply_and_noop(self):
         _, _, receipt_before = self.install_receipt(1)
         plan = sync.run_plan(self.repo, self.home)
-        self.assertEqual(plan["migration"], "v1-to-v3")
+        self.assertEqual(plan["migration"], "v1-to-v4")
         self.assertEqual(
             plan["new_files"],
             [
                 ".agents/skills/astra-orchestrator/references/maintenance.md",
                 ".agents/skills/astra-orchestrator/references/semble.md",
+                ".codex/agents/visual_qa.toml",
             ],
         )
         self.assertEqual(
@@ -139,11 +147,11 @@ keep = "unrelated"
 
         result = sync.run_apply(self.repo, self.home, None)
         state = json.loads(self.state_path.read_text())
-        self.assertEqual(state["version"], 3)
+        self.assertEqual(state["version"], 4)
         self.assertEqual(len(state["installed_hashes"]), len(sync.DESTINATIONS))
         self.assertFalse((self.home / ".codex/agents/research_verifier.toml").exists())
         self.assertFalse((self.home / ".codex/agents/semble-search.toml").exists())
-        self.assert_v3_config()
+        self.assert_current_config()
 
         for source, dest in sync.DESTINATIONS.items():
             target = self.home / dest
@@ -156,14 +164,14 @@ keep = "unrelated"
         self.assertEqual(sync.run_apply(self.repo, self.home, None)["status"], "already-applied")
 
         manifest = json.loads((Path(result["backup"]) / "manifest.json").read_text())
-        self.assertEqual(sum(bool(v.get("absent")) for v in manifest["files"].values()), 2)
+        self.assertEqual(sum(bool(v.get("absent")) for v in manifest["files"].values()), 3)
         self.assertEqual((Path(result["backup"]) / manifest["state"]).read_bytes(), receipt_before)
 
     def test_v2_migration_plan_apply_and_noop(self):
         self.install_receipt(2)
         plan = sync.run_plan(self.repo, self.home)
-        self.assertEqual(plan["migration"], "v2-to-v3")
-        self.assertEqual(plan["new_files"], [])
+        self.assertEqual(plan["migration"], "v2-to-v4")
+        self.assertEqual(plan["new_files"], [".codex/agents/visual_qa.toml"])
         self.assertEqual(
             plan["removed_files"],
             [".codex/agents/semble-search.toml", ".codex/agents/solver.toml"],
@@ -172,13 +180,66 @@ keep = "unrelated"
 
         result = sync.run_apply(self.repo, self.home, None)
         state = json.loads(self.state_path.read_text())
-        self.assertEqual(state["version"], 3)
+        self.assertEqual(state["version"], 4)
         self.assertFalse((self.home / ".codex/agents/solver.toml").exists())
         self.assertFalse((self.home / ".codex/agents/semble-search.toml").exists())
-        self.assert_v3_config()
+        self.assert_current_config()
         manifest = json.loads((Path(result["backup"]) / "manifest.json").read_text())
-        self.assertEqual(sum(bool(v.get("absent")) for v in manifest["files"].values()), 0)
+        self.assertEqual(sum(bool(v.get("absent")) for v in manifest["files"].values()), 1)
         self.assertEqual(sync.run_apply(self.repo, self.home, None)["status"], "already-applied")
+
+    def test_v3_migration_adds_terra_and_reapply_is_idempotent(self):
+        _, before, receipt_before = self.install_receipt(3)
+        terra_path = self.home / ".codex/agents/visual_qa.toml"
+        self.assertFalse(terra_path.exists())
+        plan = sync.run_plan(self.repo, self.home)
+        self.assertEqual(plan["migration"], "v3-to-v4")
+        self.assertEqual(plan["new_files"], [".codex/agents/visual_qa.toml"])
+        self.assertEqual(plan["removed_files"], [])
+        self.assertEqual(plan["removed_settings"], [])
+        self.assertEqual(self.state_path.read_bytes(), receipt_before)
+
+        result = sync.run_apply(self.repo, self.home, None)
+        state = json.loads(self.state_path.read_text())
+        self.assertEqual(state["version"], 4)
+        self.assertEqual(len(state["installed_hashes"]), 10)
+        self.assertEqual(terra_path.read_bytes(), (self.repo / "orchestrator/agents/visual_qa.toml").read_bytes())
+        self.assertEqual(stat.S_IMODE(terra_path.stat().st_mode), 0o600)
+        self.assertEqual((self.home / ".codex/config.toml").read_bytes(), before[self.home / ".codex/config.toml"])
+        self.assert_current_config()
+        self.assertEqual(sync.run_apply(self.repo, self.home, None)["status"], "already-applied")
+        self.assertEqual(sync.run_plan(self.repo, self.home)["changes"], [])
+        manifest = json.loads((Path(result["backup"]) / "manifest.json").read_text())
+        self.assertTrue(manifest["files"][".codex/agents/visual_qa.toml"]["absent"])
+
+    def test_v3_existing_terra_destination_is_refused(self):
+        _, _, receipt_before = self.install_receipt(3)
+        terra = self.home / ".codex/agents/visual_qa.toml"
+        terra.write_text("local file must be preserved\n")
+        with self.assertRaisesRegex(sync.SyncError, "already exists"):
+            sync.run_plan(self.repo, self.home)
+        with self.assertRaisesRegex(sync.SyncError, "already exists"):
+            sync.run_apply(self.repo, self.home, None)
+        self.assertEqual(terra.read_text(), "local file must be preserved\n")
+        self.assertEqual(self.state_path.read_bytes(), receipt_before)
+
+    def test_failed_v3_migration_restores_new_role_absence(self):
+        _, before, receipt_before = self.install_receipt(3)
+        original = sync.write_atomic
+        failed = False
+        def fail_receipt(path, data, *, mode=None):
+            nonlocal failed
+            if path == self.state_path and not failed:
+                failed = True
+                raise OSError("simulated receipt failure")
+            return original(path, data, mode=mode)
+        with mock.patch.object(sync, "write_atomic", side_effect=fail_receipt):
+            with self.assertRaisesRegex(sync.SyncError, "rolled back"):
+                sync.run_apply(self.repo, self.home, None)
+        self.assertFalse((self.home / ".codex/agents/visual_qa.toml").exists())
+        for path, data in before.items():
+            self.assertEqual(path.read_bytes(), data)
+        self.assertEqual(self.state_path.read_bytes(), receipt_before)
 
     def test_v1_existing_reference_target_is_refused(self):
         _, _, receipt_before = self.install_receipt(1)
@@ -241,7 +302,7 @@ keep = "unrelated"
         config = sync.read_installed_config(self.home / ".codex/config.toml")
         self.assertEqual(config["agents"]["max_depth"], 1)
         self.assertNotIn("features", config)
-        for source in sync.V1_ADDED_SOURCES:
+        for source in sync.V1_ADDED_SOURCES | sync.V4_ADDED_SOURCES:
             self.assertFalse((self.home / sync.DESTINATIONS[source]).exists())
 
     def test_failed_v2_migration_restores_retired_roles(self):
@@ -263,6 +324,7 @@ keep = "unrelated"
         for path, data in before.items():
             self.assertEqual(path.read_bytes(), data)
         self.assertEqual(self.state_path.read_bytes(), receipt_before)
+        self.assertFalse((self.home / ".codex/agents/visual_qa.toml").exists())
 
     def test_retired_collision_does_not_destroy_other_rollback_work(self):
         self.install_receipt(2)
@@ -323,6 +385,7 @@ class SourceValidationTests(unittest.TestCase):
             "tester": ("gpt-6-luna", "high"),
             "researcher": ("gpt-6-luna", "medium"),
             "reviewer": ("gpt-6.1-sol", "high"),
+            "visual_qa": ("gpt-6.1-terra", "xhigh"),
         }
         for role, pair in expected.items():
             doc = sync.parse(source[Path(f"orchestrator/agents/{role}.toml")].decode())
@@ -336,7 +399,7 @@ class SourceValidationTests(unittest.TestCase):
             (settings["agents"]["default_subagent_model"], settings["agents"]["default_subagent_reasoning_effort"]),
             ("gpt-6-luna", "high"),
         )
-        self.assertEqual(len(source), 9)
+        self.assertEqual(len(source), 10)
         self.assertFalse((self.repo / "orchestrator/agents/solver.toml").exists())
         self.assertFalse((self.repo / "orchestrator/agents/semble-search.toml").exists())
 
@@ -345,6 +408,7 @@ class SourceValidationTests(unittest.TestCase):
         self.assertIn("root: active session; maintained default `gpt-6.1-sol` at `high`", skill)
         self.assertIn("reviewer: `gpt-6.1-sol` at `high` reasoning", skill)
         self.assertIn("worker and tester: `gpt-6-luna` at `high` reasoning", skill)
+        self.assertIn("visual_qa: `gpt-6.1-terra` at `xhigh` reasoning", skill)
         self.assertIn("delegate bounded tasks to specialized agents when available", skill)
 
     def test_invalid_effort_and_unknown_model_refused(self):
@@ -397,7 +461,15 @@ class SourceValidationTests(unittest.TestCase):
         path.write_text(json.dumps(payload))
         report = sync.run_compatibility(self.repo, path)
         self.assertEqual(report["status"], "catalog-compatible")
-        self.assertEqual(report["checked_roles"], 7)
+        self.assertEqual(report["checked_roles"], 8)
+
+        # Structural model support alone is insufficient: exact local effort must match.
+        for model in payload["models"]:
+            if model["slug"] == "gpt-6.1-terra":
+                model["supported_reasoning_levels"] = [{"effort": "high"}]
+        path.write_text(json.dumps(payload))
+        with self.assertRaisesRegex(sync.SyncError, "visual_qa: gpt-6.1-terra/xhigh"):
+            sync.run_compatibility(self.repo, path)
 
         payload["models"] = [m for m in payload["models"] if m["slug"] != "gpt-6.1-sol"]
         path.write_text(json.dumps(payload))

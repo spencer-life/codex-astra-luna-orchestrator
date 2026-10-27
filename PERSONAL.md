@@ -71,7 +71,9 @@ do not claim cache or compaction behavior that was not actually observed.
 
 The public repository does not own `default_permissions`, named `[permissions]`
 profiles such as Workspace Tools, Auto-review/approval configuration, MCP/plugin
-settings, service tier, or sandbox policy outside the role-specific restrictions.
+settings, service tier, or sandbox policy. Current custom agents inherit the
+parent sandbox and permissions; read-only role guidance is instructional,
+not an enforceable per-agent sandbox override.
 The merge/apply path preserves them.
 
 The previous v3 setup was validated with Codex CLI **0.156.1**. GPT-6.1 Terra

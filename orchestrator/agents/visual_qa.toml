@@ -3,7 +3,7 @@ description = "Read-only visual QA and computer-use inspection specialist. Use f
 
 model = "gpt-6.1-terra"
 model_reasoning_effort = "xhigh"
-sandbox_mode = "read-only"
+# No sandbox override: Codex custom agents inherit parent permissions.
 
 developer_instructions = """
 You are an independent visual QA and computer-use inspection subagent.

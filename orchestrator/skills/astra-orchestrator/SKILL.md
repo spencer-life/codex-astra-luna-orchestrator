@@ -12,8 +12,8 @@ The user's explicit instructions take precedence over this skill.
 - root: active session; maintained default `gpt-6.1-sol` at `high` reasoning
 - explorer and researcher: `gpt-6-luna` at `medium` reasoning
 - worker and tester: `gpt-6-luna` at `high` reasoning
-- visual_qa: `gpt-6.1-terra` at `xhigh` reasoning, in a read-only context
-- reviewer: `gpt-6.1-sol` at `high` reasoning, in an independent read-only context
+- visual_qa: `gpt-6.1-terra` at `xhigh` reasoning; no-edit instructions, parent sandbox inherited
+- reviewer: `gpt-6.1-sol` at `high` reasoning, in an independent no-edit review context
 
 The role files in `.codex/agents/` pin these models and reasoning levels; generic subagents inherit the Luna defaults in `.codex/config.toml`. Terra is opt-in through the named `visual_qa` role; do not silently route generic tasks to Terra. Respect the active root model and do not change it from within a session.
 
@@ -23,7 +23,7 @@ The root owns architecture, task breakdown, integration, and final verification.
 
 For each delegated task, specify the objective, scope, context, constraints, deliverable, and acceptance criteria. When spawning, select the named role and its pinned model; do not silently replace a Luna worker with the root. Use explorer for mapping code, worker for implementation, tester for verification, researcher for version-specific facts, visual_qa for visual/browser/computer-use inspection, and reviewer for independent post-change review. Do not let multiple workers edit the same files without explicit ownership boundaries.
 
-For UI or design tasks with a runnable interface, assign visual_qa a focused inspection: URLs/routes, viewport sizes, relevant design references, and verification criteria. Ask for browser/screenshot evidence and reproducible findings; do not mistake a source-code review for visual verification. Terra is read-only: assign actual fixes to a writable worker or the root, then repeat targeted visual checks. Keep the independent reviewer for correctness/security and higher-level judgment; Terra does not replace that review. If browser tools are unavailable, report the gap and do not claim visual verification.
+For UI or design tasks with a runnable interface, assign visual_qa a focused inspection: URLs/routes, viewport sizes, relevant design references, and verification criteria. Ask for browser/screenshot evidence and reproducible findings; do not mistake a source-code review for visual verification. Terra is instructed not to edit, but the parent sandbox still applies: assign actual fixes to a writable worker or the root, then repeat targeted visual checks. Keep the independent reviewer for correctness/security and higher-level judgment; Terra does not replace that review. If browser tools are unavailable, report the gap and do not claim visual verification.
 
 Run independent tasks in parallel and serialize dependent work. Prefer exploration, architecture decision, bounded implementation, targeted testing, independent review when useful, then integration and final verification. Do not spawn every role mechanically. Report agent failures and resolve material findings before finishing.
 

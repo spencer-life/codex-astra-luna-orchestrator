@@ -24,7 +24,8 @@ supported without rewriting the shared configuration. Explorer/researcher use GP
 Luna Medium; worker/tester and generic fallback use GPT-6 Luna High; Terra
 visual_qa uses GPT-6.1 Terra Extra High in read-only visual/browser QA; the
 independent read-only reviewer uses GPT-6.1 Sol High. Spawned concurrency is capped
-at four.
+at four. Terra is instructed not to edit; its actual sandbox permissions
+are inherited from the parent Codex session.
 
 The routing skill and role instructions follow the original upstream templates,
 with personal model and effort selections retained. The root owns architecture,

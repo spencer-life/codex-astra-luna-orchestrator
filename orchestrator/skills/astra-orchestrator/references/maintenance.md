@@ -79,8 +79,10 @@ Experimental context management is deliberately enabled in the managed config.
 
 The orchestrator does not own `default_permissions`, Workspace Tools or other named
 `[permissions]` profiles, Auto-review/approval selection, MCP/plugin policy, or
-service tier. Specialist `sandbox_mode` values only express their role-specific
-read/write boundary. Preserve the active local permission configuration.
+service tier. Current Codex custom agents inherit the parent's sandbox and
+permissions; the existing specialist `sandbox_mode` entries do not enforce
+role-specific read/write boundaries. Terra's no-edit policy is instructional,
+not a separate sandbox. Preserve the active local permission configuration.
 
 After applying changed configuration or instructions, start a new Codex session.
 The workflow does not restart existing sessions or rewrite an explicitly selected

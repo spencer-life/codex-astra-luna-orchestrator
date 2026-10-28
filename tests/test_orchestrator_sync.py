@@ -290,7 +290,7 @@ class UpstreamAndFreshCatalogTests(unittest.TestCase):
         skill_path = self.profile / "agents/skills/astra-orchestrator/SKILL.md"
         skill_path.parent.mkdir(parents=True)
         skill_path.write_bytes((self.repo / SYNC.SKILL_PATH).read_bytes())
-        for role in SYNC.ROLE_NAMES:
+        for role in SYNC.UPSTREAM_ROLE_NAMES:
             source = self.repo / "orchestrator/agents" / f"{role}.toml"
             (self.profile / "codex/agents" / f"{role}.toml").write_bytes(source.read_bytes())
         (self.profile / "codex/config.toml").write_text("model = 'gpt-6.1-sol'\n", encoding="utf-8")
@@ -349,6 +349,7 @@ class UpstreamAndFreshCatalogTests(unittest.TestCase):
         self.assertIn("description", reviewer)
         self.assertNotIn("model", reviewer)
         self.assertNotIn("model_reasoning_effort", reviewer)
+        self.assertFalse(any("ui_specialist" in path for path in result["role_diffs"]))
         self.assertIn("New upstream instruction.", "\n".join(result["skill_diff"]))
         self.assertNotIn("Personal topology marker.", "\n".join(result["skill_diff"]))
         self.assertEqual(self._git("rev-parse", "HEAD").stdout.strip(), before_head)

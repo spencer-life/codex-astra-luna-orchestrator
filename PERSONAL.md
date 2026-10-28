@@ -136,7 +136,7 @@ A direct v1-to-v4 migration:
 - retires `research_verifier.toml` and `semble-search.toml` only when they still
   match the v1 receipt;
 - retires the previously managed `agents.max_depth` setting;
-- updates the managed model/context/agent settings to v3.
+- updates the managed model/context/agent settings to v4.
 
 It does **not** create the old v2 solver on the way through.
 
@@ -149,7 +149,7 @@ A direct v2-to-v4 migration:
   v2 receipt;
 - retires the previously managed `agents.max_depth` setting;
 - keeps the already managed reference files;
-- updates the managed model/context/agent settings to v3.
+- updates the managed model/context/agent settings to v4.
 
 ### From receipt v3
 

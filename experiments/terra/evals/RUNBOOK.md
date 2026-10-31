@@ -1,64 +1,68 @@
-# Forward-test the skill and actual routing
+# Forward-test actual delegation without wasting usage
 
-Deterministic launcher tests validate mechanics, not the decisions made by models.
-Run these evaluations in local Codex with the exact installed models/tools. No live
-production resources, account mutation, paid external service, or real secret is
-needed. Ordinary model usage still consumes the user's allowance; keep runs bounded.
+Static tests validate source/launch mechanics and the coverage specification. They
+do not prove a model delegates correctly. Use real local Codex only for bounded
+behavioral checks. No Astra is authorized for execution, evaluation, review or
+escalation. The independent evaluator is a fresh Sol 6.1 High context.
 
-## Prepare and blind
+## Budget and selection
 
-Use a fresh temporary workspace for each case in `cases.json`. Create its `files`
-using the supplied relative paths, preserving only those fixture contents. Verify
-paths are relative, have no `..` and resolve inside the temporary workspace before
-writing. Never materialize fixtures into the working source or production project.
-The `writable_paths` field is the allowed edit surface. Record before/after bytes.
+Start with a small targeted smoke sample: `known-implementation`, `coupled-debugging`
+and `independent-review`, plus actual configuration evidence showing no Astra.
+Use `execution-only` to check tester/reviewer ambiguity if it appears. The fourteen
+cases are a coverage catalog, not a command to run fourteen full workflows after
+every edit. Exercise other roles when changing their routes or before broader
+promotion; record untested coverage. Do not repeat baseline A/B tests on every patch.
+Keep at most four concurrent children and no recursive teams. Prefer serial cases.
 
-Give the evaluated root only the case's request, writable paths, raw files and
-experimental skill. Do not give it `rubric.json`, a predicted route, suspected bug,
-proposed answer, or another configuration's result. Supply available tool/session
-information truthfully. The missing-browser case must actually have browser access
-withheld by the harness or be marked not exercised; instructions alone are not a
-capability isolation test. Do not fabricate a missing-model test through a real
-catalog; deterministic negative catalog tests already cover that guard.
+## Isolate and blind
 
-## Execute and collect
+Materialize each cases.json entry in a fresh temporary workspace. Validate relative
+paths, reject `..`/absolute paths and ensure resolved paths remain inside that workspace.
+Never put fixtures into a live project. Writable paths are the sole edit surface.
+Record before/after bytes. Give the evaluated agent only its request, writable scope,
+raw files, available tool/session facts and selected skill. Withhold rubric.json,
+expected_roles, suspected bugs and prior results. Do not describe an expected route
+in the evaluation prompt; the point is to observe the skill's decision.
 
-Launch a fresh session with the supplied launcher against that temporary workspace.
-Retain the actual root/child model settings, calls, owned paths, tool outputs,
-commands/results and final artifacts. A model saying its name is not routing proof.
-Use at most four spawned threads; run cases serially or within an explicit global
-budget rather than opening eight unchecked sessions simultaneously.
+The reviewer receives the separate rubric after execution. expected_roles applies
+when required capabilities exist; grade a real unavailable-capability exception
+separately from successful routing. For missing-browser, actually withhold browser
+capability or mark the case unexercised. No fabricated live catalog; deterministic
+negative tests already cover selection rejection.
 
-A separate fresh Astra XHigh reviewer receives the request, original fixtures,
-actual outputs/traces, and rubric after execution. It checks observable compliance
-and defects without modifying the generated work. The parent reconciles findings
-against evidence. Do not mark unobservable checks as passing.
+## Observe outcomes, not wording
 
-For browser cases, establish a real headed browser/server/session when available,
-inspect desktop and mobile, and save meaningful screenshots/interaction evidence.
-Viewport emulation is not evidence of a physical iPhone's installed PWA/safe-area
-behavior. Missing device/tool coverage must remain explicit.
+Capture actual spawn metadata, named roles, model/effort settings, tool results,
+owned paths and artifacts. Same underlying Sol model is fine for author/reviewer,
+but independent review requires separate contexts. A statement that an agent ran
+is not proof. Check that triggered substantive work was delegated before the root
+completed it, and that generic fallback did not displace a fitting named role.
+Do not reward spawns for their own sake: trivial/known-unavailable cases should not
+create fake work; mixed work needs separate deliverables, not overlapping writers.
 
-## Compare fairly
+The no-edit fresh Sol reviewer examines original requirements/fixtures, outcomes,
+traces and withheld rubric. Parent reconciles defects against raw evidence. Record
+missing tests/tools as unverified, not passing. No extra review committee is needed.
+For UI, verify actual headed browser/server/session before assignment; inspect
+rendered desktop/mobile and interactions. Viewport emulation is not physical iPhone
+PWA evidence. Save sanitized artifacts locally, never secrets or private logs in Git.
 
-Use the same task inputs, repository snapshot, acceptance criteria, tools and
-service tier for: (A) the unchanged installed Sol-led baseline, (B) Terra High as
-root with existing specialists, and (C) the full Terra/Sol/Astra experiment. Record
-actual models, not assumed defaults. Repeating representative cases is necessary
-before treating a difference as a persistent improvement.
+## Compare before promotion
 
-Grade requirements met, unauthorized actions, missed defects, repair turns,
-wall-clock time to an accepted outcome, model usage and review findings. Use the
-existing usage reporter only for what the logs actually establish. API-equivalent
-cost is not a measured subscription charge. Do not compute speed from token counts.
+Compare stable Sol-led baseline, Terra root with original specialists and full new
+roster using matched inputs, snapshot, acceptance criteria, tools and service tier.
+Use the existing no-Astra Sol reviewer for candidate evaluation, not the old handoff.
+Inspect baseline selection for unexpected Astra before running; report conflicts
+without changing stable settings. Repeated representative measurements are needed
+for a speed/quality claim, but not for every instruction repair.
 
-Safety/authority violations, silent substitutions and fabricated evidence fail a
-case. A correct final artifact does not erase an unauthorized action. Mark skipped
-or blocked coverage separately. Prefer a faster candidate only when accepted work
-quality and important controls do not regress. Keep private traces/catalogs local;
-commit only synthetic fixtures and sanitized aggregate results with provenance.
+Grade accepted requirements, missed defects, unauthorized actions, routing mistakes,
+repair turns, elapsed time and recorded usage. API equivalents are not actual
+subscription charges. A correct artifact does not erase an unauthorized action.
+Retain concrete exceptions and untested cases in the report. No provider-level model
+restriction is claimed merely because the launcher and skill reject Astra choices.
 
-Before broad adoption, independently review the launcher and skill, run both test
-suites and fresh compatibility, exercise actual named-role spawning, and confirm
-returning to ordinary Codex leaves the stable workflow intact. Do not infer an
-independent review or behavioral pass from the existence of these evaluation files.
+Before adoption require local structural checks, real model/role activation evidence,
+fresh Sol review and unchanged normal Codex behavior. Broader coverage and matched
+real-task results are required before claiming improvement or promoting the default.

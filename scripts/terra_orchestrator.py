@@ -28,10 +28,10 @@ SKILL = BUNDLE / "skills/terra-orchestrator/SKILL.md"
 ROLES = ("explorer", "researcher", "worker", "tester", "architect", "engineer", "reviewer", "ui_specialist")
 AGENT_KEYS = {"enabled", "max_concurrent_threads_per_session", "default_subagent_model", "default_subagent_reasoning_effort"}
 ROLE_KEYS = {"name", "description", "model", "model_reasoning_effort", "developer_instructions"}
+# User-authorized models only; Astra is excluded even when the catalog offers it.
 # Documentation snapshot, 2026-10-30. Live catalog verification is still required.
 EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 MODEL_EFFORTS = {
-    "gpt-6-astra": EFFORTS,
     "gpt-6.1-sol": EFFORTS,
     "gpt-6.1-terra": EFFORTS | {"none"},
     "gpt-6-luna": EFFORTS | {"none"},
@@ -69,7 +69,7 @@ def model_effort(model: Any, effort: Any, label: str) -> None:
     if not isinstance(model, str) or not isinstance(effort, str):
         raise ExperimentError(f"{label}: model and effort must be strings")
     if model not in MODEL_EFFORTS or effort not in MODEL_EFFORTS[model]:
-        raise ExperimentError(f"{label}: unsupported documented model/effort {model}/{effort}; verify current documentation before changing the matrix")
+        raise ExperimentError(f"{label}: unsupported or disallowed model/effort {model}/{effort}; only Terra, Sol and Luna are authorized for this experiment")
 
 
 def validate_skill(repo: Path) -> list[Path]:
@@ -261,6 +261,10 @@ def build_command(repo: Path, bundle: dict[str, Any], executable: str, project: 
         f"the skill at {repo / SKILL} before substantive work. Its topology replaces "
         "only the stable astra-orchestrator topology in this session; preserve all "
         "other project instructions, user constraints, permissions and authorization. "
+        "Do not use Astra for any work, review, fallback, or escalation. Use only "
+        "the bundled named roles and authorized Terra, Sol and Luna models; do not "
+        "call inherited roles that route to other models. Before substantive work, "
+        "apply the skill routing gate and delegate triggered work to its exact role. "
         "Do not install or rewrite global configuration to activate it. Verify effective "
         "root and named role settings instead of relying on model self-identification.\n\n"
         "User task:\n" + task

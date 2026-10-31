@@ -1,158 +1,136 @@
 # Terra 6.1 orchestration experiment
 
-Status: candidate configuration, not a demonstrated universal optimum.
-Source branch: `experiment/terra-6.1-orchestrator`.
-Baseline: `personal` at `dce7cd6617aa6f46a7927ca8d27b7eac5c8fe12d`.
+Branch: `experiment/terra-6.1-orchestrator`; draft PR #6 stays unmerged.
+Stable baseline: `personal` at `dce7cd6617aa6f46a7927ca8d27b7eac5c8fe12d`.
+Status: implementation candidate, not a proven universally optimal configuration.
 
-The alternate source lives in `experiments/terra/`. The existing `orchestrator/`,
-its receipt-bound installer, and `personal`/`main` remain unchanged. Do not merge
-this experiment into the stable branch before local runtime and task evaluation.
-A draft comparison PR tracks the experiment because repository Issues are disabled.
+## Current decision: no Astra
 
-## Configuration
+The user excludes Astra because of usage cost. This supersedes the original trial's
+Astra reviewer/evaluator recommendation. Use no Astra for implementation, review,
+evaluation, fallback or escalation. The validator allows only the three model IDs
+below and rejects Astra in root, fallback and every named role. A catalog offering
+Astra does not authorize it. Historical repository/skill names are unchanged.
 
-| Responsibility | Model | Effort |
-| --- | --- | --- |
-| Primary coordinator | GPT-6.1 Terra | High |
-| Architecture/planning | GPT-6.1 Sol | High |
-| Difficult engineering/debugging | GPT-6.1 Sol | High |
-| Code discovery / factual research | GPT-6 Luna | Medium |
-| Bounded implementation / test execution | GPT-6 Luna | High |
-| Browser/computer/frontend specialist | GPT-6.1 Terra | XHigh |
-| Independent reviews, including design/security/final quality | GPT-6 Astra | XHigh |
-| Generic fallback | GPT-6.1 Sol | Medium |
+| Responsibility | Model / effort |
+| --- | --- |
+| Primary coordinator | GPT-6.1 Terra High |
+| architect / engineer | GPT-6.1 Sol High |
+| reviewer, independent from the author | GPT-6.1 Sol High |
+| explorer / researcher | GPT-6 Luna Medium |
+| worker / tester | GPT-6 Luna High |
+| ui_specialist | GPT-6.1 Terra XHigh |
+| Generic fallback, only when no named role fits | GPT-6.1 Sol Medium |
 
-At most four spawned threads, not a requirement to spawn four. Named role files
-pin their settings; an explicit spawn effort does not override a file's pin.
-The Sol architect plans, but does not independently approve its own plan/work.
-Astra review uses fresh context and real artifacts. Terra visual observation and
-Luna test execution supply evidence, not a substitute for required Astra review.
+Maximum four concurrent children, not four per role. No worker recursion. No
+automatic XHigh/Max escalation or full-team ceremony on small work. Same-model
+independent review means a different context, not an author's self-check.
 
-Use more reasoning where evidence shows it matters. Do not default everything to
-Max, spawn agents mechanically, duplicate work, or claim that published benchmark
-scores prove this topology is best. Root `--root-effort` is an explicit trial knob;
-High is the starting configuration, not a scientific claim of optimality.
+## Explicit delegation, not interchangeable helpers
 
-## Why a launcher rather than a named Codex profile?
+The skill now requires a routing decision before substantive work. A matching
+substantive task is delegated before the root performs it; skipped delegation needs
+a concrete user/capability/ownership exception. Trivial known edits stay direct.
+Explicit independent review/verification requests override the trivial shortcut.
 
-The inspected current `ConfigProfile` schema supports root model/effort but not an
-entire agent roster. Named profiles alone would leave the installed specialists in
-place. The launcher instead supplies session-only `--config` overrides for root,
-four global agent defaults and the eight explicit role-file paths. Current source
-loads declared role files by config-layer precedence.
+Role descriptions and instructions distinguish internal discovery from external
+research, deciding a contract from solving within it, known implementation from
+unknown causes, visual/browser work from backend logic, and execution evidence from
+independent critique. One owner per deliverable/file; no generic agent when a named
+role fits, no duplicate parent/worker implementation, and no requirement to activate
+all eight roles on every task. The skill's routing table is the authoritative guide;
+its delegation reference supplies examples and reporting contracts.
 
-It does not modify the installed configuration, agents, skills, global AGENTS.md,
-authentication, permission/approval settings, providers, MCP/plugins, service tier,
-voice/audio settings or existing receipt. It does not change CODEX_HOME or copy
-credentials. Ordinary Codex runtime may still write its normal session state.
-The experiment intentionally does not force experimental context management,
-currently marked unavailable in the documentation.
+A claim that an agent was used is not proof. Local validation records actual spawn
+metadata and outputs, including routing exceptions. Fourteen blinded fixture cases
+cover all eight roles plus trivial work, unavailable tools and scope boundaries.
+Static tests check the specification/configuration, not whether models obey it.
 
-Matching role names override existing roles only in that launched session. Other
-custom roles remain available; the selected skill instructs the root to use the
-bundled roles. The skill is referenced by its absolute source path in the initial
-prompt. It is not installed as a second globally auto-selected orchestrator.
-The user's project instructions remain in force. The explicit workflow selection
-replaces only the old orchestration topology.
+## Activation and isolation
 
-## Local adoption
+Source is under `experiments/terra/`; launcher is `scripts/terra_orchestrator.py`.
+Original `orchestrator/`, its installer, receipts, `personal` and `main` are untouched.
+Named Codex profiles cannot currently switch the full roster. The launcher supplies
+session-only root/default-agent/role-file overrides and an explicit skill path.
+A Git checkout or model-picker change alone does not activate this workflow.
 
-Have KETA perform this through an actual local Codex thread, not a cloud-only
-workspace. First inspect the live CLI, global instructions, model catalog, tools,
-worktrees, local changes and private receipt. Previous local state is not proof.
-Use the existing receipt-bound checkout for stable maintenance only. For this
-experiment, deliberately create or reuse a separate registered worktree on the
-experimental branch. This does not migrate the stable receipt or bypass its guard.
-Do not switch/reset the stable checkout, discard local commits, or rewrite hashes.
+No global config, installed agents/skills, global AGENTS.md, credentials, providers,
+permissions/Auto-review, MCP/plugins, service tier/Fast, voice or CODEX_HOME changes.
+Normal Codex may still write its own session state. This workflow does not force
+experimental context management. Other inherited roles may remain visible; the
+skill/launch prompt prohibit using them to evade the roster or no-Astra decision.
+This is not a provider-level model/billing firewall; verify effective runtime state.
 
-From the experimental checkout, after reviewing and trusting its Mise file:
+## Local adoption through KETA
+
+Use a real local WSL/Linux Codex thread. Read applicable AGENTS.md and
+[LOCAL-HANDOFF.md](experiments/terra/LOCAL-HANDOFF.md). Inspect the actual CLI,
+help/schema, model catalog, instructions, worktrees and private stable receipt.
+Keep the stable receipt-bound checkout unchanged. Reuse or create a separate
+registered experiment worktree after checking collisions/local work. Do not reset,
+force-push, discard unpublished changes or rewrite receipt identity/hashes.
+
+After reviewing and trusting the experimental Mise file:
 
 ```sh
 mise run terra:validate
 mise run terra:test
 mise run orchestrator:test
 mise run terra:compatibility
-mise run terra:plan -- --project /absolute/path/to/project
-mise run terra:launch -- --project /absolute/path/to/project
+mise run terra:plan -- --project /absolute/path/to/disposable-project
+mise run terra:launch -- --project /absolute/path/to/disposable-project
 ```
 
-`terra:check` runs the first four checks, including the unchanged stable test suite.
-The Python launcher itself requires Python 3.11+ and no third-party dependencies.
-The tests use pytest and PyYAML through Mise. An equivalent direct preview is:
+`terra:check` runs validation, both suites and fresh compatibility. Python 3.11+
+is required; the launcher uses only the standard library. Tests use pytest/PyYAML.
+The minimum Codex CLI 0.159.0 floor is a prerequisite, not proof of compatibility.
+Verify the actual installed release's custom-role schema and runtime behavior.
 
-```sh
-python3 scripts/terra_orchestrator.py plan --project /absolute/path/to/project
-```
+`plan` is a preview, not installation or a model call. `compatibility` reads a fresh
+local catalog by default; supplied catalogs are explicitly offline evidence only.
+`launch` requires clean committed experiment source and the expected branch/origin,
+obtains a fresh catalog and rejects source drift. It never accepts a cached catalog
+as launch proof, silently substitutes a model or automatically reinstalls the CLI.
+Role-file pins override spawn defaults; prose does not change reasoning effort.
 
-`plan` does not run Codex or modify configuration. `compatibility` obtains a fresh
-`codex debug models` catalog after checking CLI help/version. A supplied catalog is
-accepted only for explicitly offline compatibility analysis, with freshness marked
-unknown. `launch` never accepts supplied/cached catalog evidence. It requires a
-clean committed source checkout on the intended branch and origin, checks the
-catalog again, and rejects source changes during preflight. Missing models,
-unsupported effort, unavailable debug commands or malformed roles stop activation;
-there is no silent model fallback or automatic CLI reinstall.
+In a NEW session verify actual root/child models, efforts, loaded skill, tools and
+inherited controls from config/events, not self-identification. Inspect any older
+trial wrapper/installed copy and update safely; never reapply the old Astra handoff.
+Start with a small smoke sample from the evaluation runbook and a fresh Sol High
+review. Remaining cases are available for targeted regressions and later comparison;
+do not run repeated full evaluations merely because a file changed.
 
-The >=0.159.0 version floor is a prerequisite, not proof of compatibility. Verify
-the installed release's schema and real custom-role loading. Do not fabricate a
-model catalog or assume the latest public source equals the locally installed CLI.
+After validation, an optional thin `codex-terra` wrapper may point to this launcher
+and current project path, preserving existing commands/shell setup. Dot-created
+threads need the same verified overrides. No claimed activation from a root-only
+model change. Report unsupported thread-launch capabilities as concrete blockers.
 
-Start a new experimental session. Confirm actual parent/child models and efforts
-from configuration/events and observed tools, not model self-identification. Test
-that the exact experiment skill is loaded and no legacy role topology is substituted.
-Run bounded smoke tests and independent review before calling adoption successful.
-`--prompt` supplies an initial task; without it the session checks availability and
-waits for a task. An optional local `codex-terra` shell wrapper may point to this
-launcher and pass the current project path, but must preserve existing shell setup
-and not overwrite a conflicting command.
+## Exit, updates and promotion
 
-## Rollback and ongoing updates
+Exit the trial and start Codex normally for the unchanged stable workflow. Existing
+sessions do not change retroactively. No global config rollback is needed. Preserve
+work and review experiment updates before fast-forwarding. Never run stable
+`orchestrator:apply` or `orchestrator:sync` from this branch or merge PR #6 as part of
+local activation. Keep private catalogs, logs and configuration out of Git.
 
-Exit the experimental session and start Codex normally for the unchanged installed
-workflow. Running sessions do not change retroactively. No global config rollback
-is needed because the launcher does not write it. Verify any optional shell wrapper
-before removing it; never delete unrelated files or the stable receipt.
+A fresh Sol High reviewer checks source and local activation. No review is claimed
+merely because a role exists. Before promotion, compare accepted outcomes, missed
+requirements, repairs, elapsed time and usage on matched tasks/tooling/service tier.
+Use existing usage reports only for what logs establish, not as subscription bills.
+Do not infer speed, intelligence or reliable delegation from configuration tests.
 
-Keep experimental source committed on its branch. Review updates before fetching
-and fast-forwarding its worktree; preserve local changes. Do not run
-`orchestrator:sync` or `orchestrator:apply` from the experimental branch.
-Source validation is not live installation, and a Git checkout alone is not model
-activation. Desktop/dot-created threads must use the same verified session overrides
-or supported launcher; simply selecting Terra changes only the root.
+## Skill-creator and implementation references
 
-## Evaluation and delivery gates
+The skill retains a focused entrypoint, discriminating description, conditional
+references, authorization boundaries and blinded forward tests. Instructions guide
+observable outcomes, not private reasoning. References inspected 2026-10-30:
 
-Use [the evaluation runbook](experiments/terra/evals/RUNBOOK.md) with blinded
-requests and isolated fixtures. Compare the same tasks under the stable setup,
-Terra-root-only with existing specialists, and the complete new topology. Keep
-service tier, repository snapshot, tools and acceptance criteria matched. Repeat
-representative tasks; do not select only a successful run or compare different
-efforts while attributing everything to model identity.
+- [Skill creator](https://github.com/openai/codex/blob/1da2aefe001b333340fe8b012b18b072c49cc743/codex-rs/skills/src/assets/samples/skill-creator/SKILL.md), blob `490ccc6c3e0015eb982bb5c108c2df083be2c6c2`.
+- [Creator validator](https://github.com/openai/codex/blob/1da2aefe001b333340fe8b012b18b072c49cc743/codex-rs/skills/src/assets/samples/skill-creator/scripts/quick_validate.py), blob `e27023ece4bd259ef36560e19995eec7b6a345bf`.
+- [Custom agents](https://learn.chatgpt.com/docs/agent-configuration/subagents), including file pins and inherited permission boundaries.
+- [ConfigProfile source](https://github.com/openai/codex/blob/1da2aefe001b333340fe8b012b18b072c49cc743/codex-rs/config/src/profile_toml.rs).
+- [Role loader](https://github.com/openai/codex/blob/1da2aefe001b333340fe8b012b18b072c49cc743/codex-rs/agent-roles/src/loader.rs).
+- [Evaluation runbook](experiments/terra/evals/RUNBOOK.md).
 
-Measure accepted outcomes, missed requirements, repair turns, actual elapsed time,
-root/child usage, required review findings and unverified behavior. Use the existing
-usage reporter for recorded data, not as a claim about billing or task boundaries.
-Source/tests/catalog checks do not establish orchestration quality or a speed gain.
-
-Before promoting the experiment, require a fresh Astra XHigh independent review of
-its source and actual local launch behavior. Do not claim such a review ran merely
-because a reviewer role exists. KETA is the local handoff coordinator, not a required
-reviewer for every ordinary project PR.
-
-## Guidance and verified references (2026-10-30)
-
-The skill follows OpenAI skill-creator guidance: a discriminating description,
-short decision-oriented entrypoint, conditional references, scope/authority
-boundaries, executable checks for deterministic mechanics, and separate blinded
-forward-testing. It does not repeat whole manuals or prescribe private reasoning.
-
-- [Skill creator](https://github.com/openai/codex/blob/1da2aefe001b333340fe8b012b18b072c49cc743/codex-rs/skills/src/assets/samples/skill-creator/SKILL.md), inspected blob `490ccc6c3e0015eb982bb5c108c2df083be2c6c2`.
-- [Creator validator](https://github.com/openai/codex/blob/1da2aefe001b333340fe8b012b18b072c49cc743/codex-rs/skills/src/assets/samples/skill-creator/scripts/quick_validate.py), inspected blob `e27023ece4bd259ef36560e19995eec7b6a345bf`.
-- [Custom agents](https://learn.chatgpt.com/docs/agent-configuration/subagents): file pins, inheritance and parent permission boundaries.
-- [Configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference): role config-file overrides and unavailable experimental context management.
-- [Profile source](https://github.com/openai/codex/blob/1da2aefe001b333340fe8b012b18b072c49cc743/codex-rs/config/src/profile_toml.rs): no profile-level agent roster.
-- [Role loader source](https://github.com/openai/codex/blob/1da2aefe001b333340fe8b012b18b072c49cc743/codex-rs/agent-roles/src/loader.rs): declared role files and config-layer precedence.
-
-These are implementation references, not evidence that the user's machine has
-this release, these models, or a working browser. Keep private logs and catalogs
-out of this public repository.
+These references do not establish the user's local version, model availability or
+a working browser. Unavailable local/model-backed checks remain explicitly unverified.

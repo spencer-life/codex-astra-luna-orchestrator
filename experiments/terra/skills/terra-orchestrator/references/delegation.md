@@ -1,75 +1,80 @@
-# Delegation and evidence contracts
+# Delegation contracts and trigger examples
+
+## Select one owner for the next output
+
+Use the routing gate in SKILL.md before substantive work. Do not spawn all roles to
+satisfy a quota. A missing required tool/model is a blocker to report, not permission
+to use Astra or silently choose an unrelated agent. Roles are differentiated by
+output and source of uncertainty, not by model name.
+
+| Example assignment | Route | Do not substitute |
+| --- | --- | --- |
+| Trace who validates a request and where the database write happens | explorer | researcher; this is internal code evidence |
+| Verify whether the installed framework supports this configuration option | researcher | explorer; this is external/version evidence |
+| Decide how immediate token revocation can coexist with cached validation | architect | engineer coding an undecided policy |
+| Implement the accepted validation rule in the specified handler | worker | engineer merely because several lines change |
+| Diagnose duplicate writes under retries and repair the coupled state transition | engineer | worker repeatedly guessing a one-line fix |
+| Correct a clipped mobile header and verify rendered desktop/mobile behavior | ui_specialist, implementation | engineer/worker as the visual owner |
+| Reproduce this reported regression and run the targeted suite, without production edits | tester | reviewer treating commands as design signoff |
+| Independently inspect the completed change for race conditions and missing tests | reviewer | architect inventing a new plan or author reviewing itself |
+
+If discovery is needed first, ask explorer for a map, then give that evidence to the
+implementing role; do not send both agents to independently rediscover the same map.
+If external compatibility determines a plan, ask researcher for that fact before the
+architect chooses. If a bug is in backend state but appears in a browser, give UI
+reproduction to ui_specialist and backend repair to engineer with disjoint ownership.
 
 ## Assignment
 
-Supply only the context needed to act correctly:
+Give outcome/acceptance criteria, non-goals, exact worktree and relevant paths,
+minimal raw context, exclusive writable paths or no-edit mode, dependencies,
+available tools/permissions, and expected evidence. For UI specify inspection or
+implementation mode and browser URL/session/viewports. Never imply missing tools
+exist. Do not pass the entire transcript or prescribe private reasoning steps.
 
-- Outcome and observable acceptance criteria, including important non-goals.
-- Exact repository/worktree, relevant files/symbols and authoritative references.
-- Exclusive writable paths, or no-edit scope; UI inspection/implementation mode.
-- Constraints, dependent work, available tools and permissions; who owns shared files.
-- Expected deliverables and the specific checks that would establish completion.
+The parent owns shared files, coordination and acceptance. Workers do not recursively
+spawn. Resolve expanded scope with the parent before editing, not after a collision.
+Serialize dependent work; reuse existing valid evidence; avoid repetitive polling.
 
-Use outcome-oriented assignments rather than prescribing private reasoning steps.
-Do not send the entire parent transcript. The model should inspect raw artifacts
-and explain decisions with concise evidence, not disclose private chain-of-thought.
+## Result and routing accountability
 
-## Ownership and sequencing
+Return outcome, actual modified paths/artifacts, checked snapshot, commands/results,
+environment assumptions, unresolved risks and decisions. Distinguish static reads,
+execution, visual inspection and independent review. No self-assigned approval.
+The parent briefly records the actual role used, assignment and result. For skipped
+substantive delegation, name the concrete exception and unverified coverage. A model
+saying it delegated is not evidence: retain actual spawn/role metadata locally.
 
-Before parallel writes, separate ownership by files or truly independent worktrees.
-Do not assign one shared config, lockfile, schema or component to multiple writers.
-If scope expands, obtain a parent decision and revise ownership before editing.
-A waiting dependency is not useful parallelism: start the dependent work only when
-its contract is stable. Keep one owner for routine checks and share the evidence.
-Workers do not recursively spawn; the parent controls the total thread budget.
+## Independent Sol review
 
-Do not poll repeatedly while a writer is making progress. Use completion signals
-when available. Reuse a context for follow-up on the same coherent task; retire it
-at a meaningful boundary. Only the parent integrates and decides acceptance.
+Use a fresh Sol 6.1 High reviewer. Give original requirements, real artifacts/diff,
+relevant surrounding code and raw evidence, initially without the author's verdict
+when that could bias the result. The architect/engineer instance that authored work
+cannot approve it independently. Same underlying model, separate context.
 
-## Result
+A tester supplies test evidence and Terra supplies visual observations; neither
+replaces requested independent review. Resolve findings against artifacts, have the
+owner repair confirmed defects and rerun affected checks. Continue focused follow-up
+in the independent reviewer thread rather than paying for redundant full reviews.
+No automatic Max/XHigh, no Astra, no downgrade of a required gate into a self-check.
+If Sol review is unavailable, report the gate blocked and keep completed safe work.
 
-Return a compact report with:
+## Escalation
 
-- Outcome and files/artifacts actually changed, with commit/worktree context.
-- Commands, results and environment assumptions; links or paths to raw evidence.
-- Requirements satisfied, gaps, material risks and decisions needed.
+Worker returns to parent/engineer when the solution is no longer known, a speculative
+approach fails or coupled reasoning appears. Engineer returns new contract/schema/
+permission decisions to parent/architect before expanding scope. The parent may ask
+a reviewer to challenge a consequential existing plan; that is distinct from writing
+it. Escalation is a different bounded question, not repetition of the same task at
+higher effort. Any model/effort change requires real supported configuration evidence.
 
-No self-assigned approval labels. No claims that tests, model calls, visual reviews
-or external actions occurred without tool evidence. Distinguish static inspection,
-execution checks and independent review.
+Stop retries with an unchanged blocker. Gather a discriminating observation, take
+an authorized materially different approach, or report the exact missing capability.
+If coordination exceeds the Terra root's scope, propose a new Sol-led session with a
+compact checkpoint rather than claiming an in-place switch. Never propose Astra.
 
-## Independent review
+## Handoff
 
-Use a fresh Astra XHigh reviewer. Give it the original requirements, real diff,
-relevant code, test evidence and permitted scope. Initially withhold the author's
-proposed verdict, suspected bug and solution story when they could bias the review.
-A developer who authored the implementation cannot independently review it.
-Test execution by the tester and visual observation by Terra provide evidence;
-they do not replace a requested Astra independent review.
-
-Resolve findings against the artifacts, not reviewer prestige. Have the owner fix
-confirmed defects, rerun affected checks, and obtain a fresh or appropriately
-continued independent check on the changed scope. Do not silently downgrade a
-required review because the model is unavailable. Report that gate as blocked.
-
-## Escalation and persistence
-
-Escalate to Sol engineering when a bounded worker discovers coupled reasoning,
-unclear failure behavior, or a failed approach that needs a new hypothesis.
-Escalate a technical decision to the architect before expanding scope. Use Astra
-for independent assessment of consequential decisions, not routine lookup work.
-
-Stop repeating an operation when the blocker is unchanged or the next action would
-exceed authorization. Gather a discriminating observation, choose a materially
-different evidence-backed approach, or report the missing permission/capability.
-Do not keep adding agents or increasing effort to compensate for absent tools.
-If the entire problem outgrows a Terra root, propose a new Sol-led session with a
-compact checkpoint; do not claim a model switch occurred merely by instructing it.
-
-## Checkpoint for another session
-
-Preserve user intent, accepted decisions, constraints, unresolved questions,
-completed work, evidence locations, current branch/commit and the next action.
-Leave inspectable implementation details and live state for the receiving Codex
-to verify. Include unavailable checks and do not turn plans into completed work.
+Preserve intent, decisions, constraints, unresolved questions, completed work,
+artifact/evidence locations, branch/commit and next action. Let receiving Codex
+inspect live state and implementation details. Plans are not completed work.

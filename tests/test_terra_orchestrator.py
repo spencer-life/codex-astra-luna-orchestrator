@@ -81,7 +81,7 @@ def test_selected_topology_is_explicit_and_reviewer_independent():
     pairs = {role: (model, effort) for role, model, effort in m.selected_pairs(bundle)}
     assert pairs["root"] == ("gpt-6.1-terra", "high")
     assert pairs["architect"] == pairs["engineer"] == ("gpt-6.1-sol", "high")
-    assert pairs["reviewer"] == ("gpt-6-astra", "xhigh")
+    assert pairs["reviewer"] == ("gpt-6.1-sol", "high")
     assert pairs["fallback"] == ("gpt-6.1-sol", "medium")
     assert bundle["config"]["agents"]["max_concurrent_threads_per_session"] == 4
 
@@ -188,7 +188,7 @@ def test_duplicate_models_rejected():
         m.check_catalog(json.dumps(value).encode(), m.selected_pairs(m.validate_bundle(ROOT)))
 
 
-@pytest.mark.parametrize("model", ["gpt-6.1-terra", "gpt-6.1-sol", "gpt-6-astra", "gpt-6-luna"])
+@pytest.mark.parametrize("model", ["gpt-6.1-terra", "gpt-6.1-sol", "gpt-6-luna"])
 def test_missing_models_do_not_fall_back(model):
     value = catalog()
     value["models"] = [item for item in value["models"] if item["slug"] != model]
@@ -348,7 +348,7 @@ def test_eval_fixtures_are_bounded_and_rubric_is_separate():
     directory = ROOT / m.BUNDLE / "evals"
     cases = json.loads((directory / "cases.json").read_text())["cases"]
     rubric = json.loads((directory / "rubric.json").read_text())["cases"]
-    assert len({case["id"] for case in cases}) == len(cases) == 8
+    assert len({case["id"] for case in cases}) == len(cases) == 14
     assert {case["id"] for case in cases} == set(rubric)
     for case in cases:
         assert case["request"] and case["files"]
@@ -362,3 +362,56 @@ def test_mise_checks_include_both_suites_without_changing_stable_apply():
     doc = tomllib.loads((ROOT / "mise.toml").read_text())
     assert "mise run orchestrator:test" in doc["tasks"]["terra:check"]["run"]
     assert doc["tasks"]["orchestrator:apply"]["run"] == "uv run --script scripts/orchestrator_sync.py apply"
+
+
+@pytest.mark.parametrize("selection", ["root", "fallback", *m.ROLES])
+def test_astra_is_rejected_for_every_selection(repo, selection):
+    if selection in {"root", "fallback"}:
+        path = repo / m.BUNDLE / "config.toml"
+        key = "model" if selection == "root" else "default_subagent_model"
+    else:
+        path = repo / m.BUNDLE / "agents" / f"{selection}.toml"
+        key = "model"
+    doc = tomllib.loads(path.read_text())
+    old = doc["agents"][key] if selection == "fallback" else doc[key]
+    text = path.read_text()
+    import re
+    pattern = rf'(?m)^{key} = "{re.escape(old)}"$'
+    changed, count = re.subn(pattern, f'{key} = "gpt-6-astra"', text)
+    assert count == 1
+    path.write_text(changed)
+    with pytest.raises(m.ExperimentError, match="disallowed"):
+        m.validate_bundle(repo)
+
+
+def test_catalog_neither_requires_nor_selects_astra():
+    bundle = m.validate_bundle(ROOT)
+    pairs = m.selected_pairs(bundle)
+    allowed = {"gpt-6.1-terra", "gpt-6.1-sol", "gpt-6-luna"}
+    assert set(m.MODEL_EFFORTS) == allowed
+    assert {model for _, model, _ in pairs} <= allowed
+    supplied = catalog(bundle)
+    assert m.check_catalog(json.dumps(supplied).encode(), pairs)["checked_roles"] == 10
+    supplied["models"].append({"slug": "gpt-6-astra", "supported_reasoning_levels": [{"effort": "high"}]})
+    assert m.check_catalog(json.dumps(supplied).encode(), pairs)["checked_roles"] == 10
+    assert m.selected_pairs(bundle) == pairs
+
+
+def test_forward_test_matrix_covers_all_roles_and_tiebreaks():
+    # Coverage of the evaluation specification, NOT proof that a model delegates.
+    directory = ROOT / m.BUNDLE / "evals"
+    cases = json.loads((directory / "cases.json").read_text())["cases"]
+    routing = json.loads((directory / "rubric.json").read_text())["expected_roles"]
+    assert set(routing) == {case["id"] for case in cases}
+    assert {role for roles in routing.values() for role in roles} == set(m.ROLES)
+    assert routing["trivial"] == routing["missing-browser"] == []
+    assert routing["internal-discovery"] == ["explorer"]
+    assert routing["external-version-fact"] == ["researcher"]
+    assert routing["known-implementation"] == ["worker"]
+    assert "engineer" in routing["coupled-debugging"]
+    assert routing["consequential-plan"] == ["architect"]
+    assert routing["plan-critique"] == ["reviewer"]
+    assert routing["execution-only"] == ["tester"]
+    assert routing["ui-mobile"] == ["ui_specialist"]
+    for case in cases:
+        assert "expected_roles" not in case

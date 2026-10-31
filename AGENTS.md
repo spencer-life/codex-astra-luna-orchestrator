@@ -1,5 +1,16 @@
 # Personal Codex orchestrator
 
+## Terra experiment exception
+
+On `experiment/terra-6.1-orchestrator`, read [TERRA.md](TERRA.md) and
+[experiment instructions](experiments/terra/AGENTS.md) for changes to the
+experimental bundle, launcher, tests and documentation. A separate experiment
+worktree and session-only launch are intentional; they do not migrate or bypass
+the stable installation receipt. Use the selected Terra skill only in an explicitly
+activated experimental session. Do not merge this experiment into `personal`, run
+the stable apply/sync workflow from its branch, or overwrite installed settings.
+The stable-maintenance rules below still govern `orchestrator/` and its installer.
+
 ## Source and scope
 
 Use the receipt-bound `personal` checkout recorded in

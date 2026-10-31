@@ -44,3 +44,32 @@ run = [
   "mise run orchestrator:test",
   "mise run orchestrator:compatibility -- --refresh-catalog",
 ]
+
+[tasks."terra:validate"]
+description = "Validate the isolated Terra source without changing installed files"
+run = "uv run --no-project python scripts/terra_orchestrator.py validate"
+
+[tasks."terra:test"]
+description = "Run deterministic Terra launcher checks, not model-backed evaluations"
+run = "uv run --no-project --with pytest --with PyYAML==6.0.3 python -m pytest tests/test_terra_orchestrator.py"
+
+[tasks."terra:compatibility"]
+description = "Check Terra selections against a fresh local Codex catalog by default"
+run = "uv run --no-project python scripts/terra_orchestrator.py compatibility"
+
+[tasks."terra:plan"]
+description = "Preview the session-only Terra launch arguments; no Codex call or install"
+run = "uv run --no-project python scripts/terra_orchestrator.py plan"
+
+[tasks."terra:launch"]
+description = "Start a new experimental Terra session after source and catalog checks"
+run = "uv run --no-project python scripts/terra_orchestrator.py launch"
+
+[tasks."terra:check"]
+description = "Check new source, both test suites, and fresh local model compatibility"
+run = [
+  "mise run terra:validate",
+  "mise run terra:test",
+  "mise run orchestrator:test",
+  "mise run terra:compatibility",
+]

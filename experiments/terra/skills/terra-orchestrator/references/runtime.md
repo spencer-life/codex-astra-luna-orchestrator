@@ -20,8 +20,10 @@ evaluator, then compare observed artifacts and agent activity against it.
 ## Choose the activation path
 
 For an existing local setup that links to this checkout, review and fast-forward
-the source, then verify what a new session loads. Check the saved root selection
-separately from the skill and role files.
+the source, then verify what a new session loads. Check the active root selection
+against the bundle's supported pairs, separately from the skill and role files.
+If it falls outside those pairs, report the selection as a blocker and ask the
+user to select a supported root before proceeding with the Terra workflow.
 
 For a session-only trial, use the supplied launcher. It applies root and named-role
 overrides for that session. Its preflight checks the clean committed source, branch,

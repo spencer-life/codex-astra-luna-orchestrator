@@ -1,6 +1,6 @@
 # Terra 6.1 orchestration experiment
 
-Branch: `experiment/terra-6.1-orchestrator`; draft PR #6 stays unmerged.
+Source branch: `experiment/terra-6.1-orchestrator`.
 Stable baseline: `personal` at `dce7cd6617aa6f46a7927ca8d27b7eac5c8fe12d`.
 Status: implementation candidate, not a proven universally optimal configuration.
 
@@ -41,9 +41,15 @@ role fits, no duplicate parent/worker implementation, and no requirement to acti
 all eight roles on every task. The skill's routing table is the authoritative guide;
 its delegation reference supplies examples and reporting contracts.
 
+Start with one or two owners per milestone. Use the remaining capacity for distinct
+work that can progress independently. Reuse a suitable owner and the independent
+reviewer for focused follow-ups. Before packaging, check the implemented behavior
+against the user's acceptance criteria. Use the packaged artifact's identity for
+any downstream verification or approval that depends on the exact candidate.
+
 A claim that an agent was used is not proof. Local validation records actual spawn
-metadata and outputs, including routing exceptions. Fourteen blinded fixture cases
-cover all eight roles plus trivial work, unavailable tools and scope boundaries.
+metadata and outputs, including routing exceptions. Blinded fixtures cover all eight
+roles plus trivial work, unavailable tools, scope boundaries and release follow-ups.
 Static tests check the specification/configuration, not whether models obey it.
 
 ## Activation and isolation
@@ -107,11 +113,13 @@ model change. Report unsupported thread-launch capabilities as concrete blockers
 
 ## Exit, updates and promotion
 
-Exit the trial and start Codex normally for the unchanged stable workflow. Existing
-sessions do not change retroactively. No global config rollback is needed. Preserve
-work and review experiment updates before fast-forwarding. Never run stable
-`orchestrator:apply` or `orchestrator:sync` from this branch or merge PR #6 as part of
-local activation. Keep private catalogs, logs and configuration out of Git.
+For session-only use, exit the trial and start Codex normally to return to your
+installed defaults. Review source updates before fast-forwarding the experiment
+checkout. If an existing local setup points at this checkout, updating it can
+change the skill that new sessions load. Verify the root model separately from the
+skill. Native startup does not run the optional launcher preflight. Never run
+stable `orchestrator:apply` or `orchestrator:sync` from this branch. Keep private
+catalogs, logs and configuration out of Git.
 
 A fresh Sol High reviewer checks source and local activation. No review is claimed
 merely because a role exists. Before promotion, compare accepted outcomes, missed

@@ -348,11 +348,13 @@ def test_eval_fixtures_are_bounded_and_rubric_is_separate():
     directory = ROOT / m.BUNDLE / "evals"
     cases = json.loads((directory / "cases.json").read_text())["cases"]
     rubric = json.loads((directory / "rubric.json").read_text())["cases"]
-    assert len({case["id"] for case in cases}) == len(cases) == 14
+    assert len({case["id"] for case in cases}) == len(cases)
     assert {case["id"] for case in cases} == set(rubric)
     for case in cases:
         assert case["request"] and case["files"]
         assert "expected" not in case and "rubric" not in case
+        if "follow_up" in case:
+            assert isinstance(case["follow_up"], str) and case["follow_up"].strip()
         for name in [*case["files"], *case["writable_paths"]]:
             assert not Path(name).is_absolute() and ".." not in Path(name).parts
         assert set(case["writable_paths"]) <= set(case["files"])
@@ -413,5 +415,6 @@ def test_forward_test_matrix_covers_all_roles_and_tiebreaks():
     assert routing["plan-critique"] == ["reviewer"]
     assert routing["execution-only"] == ["tester"]
     assert routing["ui-mobile"] == ["ui_specialist"]
+    assert routing["release-follow-up"] == ["worker", "reviewer"]
     for case in cases:
         assert "expected_roles" not in case

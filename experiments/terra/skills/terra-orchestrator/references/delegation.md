@@ -24,6 +24,31 @@ If external compatibility determines a plan, ask researcher for that fact before
 architect chooses. If a bug is in backend state but appears in a browser, give UI
 reproduction to ui_specialist and backend repair to engineer with disjoint ownership.
 
+## Coordinate by milestone
+
+Group related work into a coherent milestone and start with one owner, adding a
+second independent lane when it can make progress without duplicating discovery or
+editing the same files. Use the four-thread limit for genuinely separate deliverables
+or checks. It is a ceiling, not a target. For a release, for example, a backend owner
+and a UI owner can work in parallel on separate surfaces while the root tracks
+acceptance criteria and dependencies.
+
+Before starting another thread, check whether the work already has an active owner or
+finished evidence that still applies. If the same deliverable needs more work, follow
+up with its existing owner. Use a fresh reviewer for the initial review of material
+work, then reuse that reviewer for focused rechecks while independence and scope remain
+valid. Keep valid test results and rerun only coverage affected by a change, along
+with required release checks.
+
+Keep working on unblocked root-owned tasks while agents run. Wait when another result
+is required to continue or integrate. Otherwise, act on incoming updates or check
+again when there is reason to expect progress. Repeated waits that return no new
+information add coordination without advancing the work. If a thread name is already
+in use, check that existing owner and follow up if the deliverable matches. Do not
+retry an unchanged spawn. If capacity is full and distinct work has no owner, queue it
+until a slot opens. Retire agents when ownership ends if the runtime supports closing
+their threads, and report an actual availability blocker when no route remains.
+
 ## Assignment
 
 Give outcome/acceptance criteria, non-goals, exact worktree and relevant paths,
@@ -32,9 +57,16 @@ available tools/permissions, and expected evidence. For UI specify inspection or
 implementation mode and browser URL/session/viewports. Never imply missing tools
 exist. Do not pass the entire transcript or prescribe private reasoning steps.
 
+For release-like work, state the user-critical acceptance criteria in the initial
+assignment and test plan. Check behavior against those criteria before packaging.
+After packaging, record the actual artifact's version or digest for downstream
+review, then run any required exact-artifact, privacy, deployment or approval gates.
+If edits change the candidate, rerun affected behavioral checks and gates against the
+new artifact.
+
 The parent owns shared files, coordination and acceptance. Workers do not recursively
 spawn. Resolve expanded scope with the parent before editing, not after a collision.
-Serialize dependent work; reuse existing valid evidence; avoid repetitive polling.
+Serialize dependent work and keep parallel assignments on distinct paths.
 
 ## Result and routing accountability
 

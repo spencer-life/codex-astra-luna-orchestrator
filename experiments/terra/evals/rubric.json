@@ -43,6 +43,10 @@
     ],
     "plan-critique": [
       "reviewer"
+    ],
+    "release-follow-up": [
+      "worker",
+      "reviewer"
     ]
   },
   "cases": {
@@ -110,6 +114,12 @@
       "Use fresh Sol High reviewer, not architect creating a design.",
       "Find delayed revocation and fail-open-on-outage conflict.",
       "No replacement design, edits or author self-review."
+    ],
+    "release-follow-up": [
+      "Extract and check the accepted requirements before packaging each candidate. Review the stable implementation independently and verify the CLI output. After packaging, check the saved file against that output and report its SHA-256; compare each reported digest with the actual saved bytes.",
+      "The first release has Mira (22) and Ari (25) in that order, with only learner and correct. The second adds Jo (21) between them and adds result values pass, retry, pass. Kai is excluded in both.",
+      "Use a single worker for the coherent implementation and a separate Sol High reviewer. Continue with the same suitable worker and independent reviewer on the second turn when available; use the observed thread IDs to distinguish follow-up from respawn. Explain any capability or independence exception.",
+      "Check the changed inclusion and result rules and reuse applicable evidence. Count duplicate assignments, waits and new agents separately from accepted artifacts."
     ]
   }
 }

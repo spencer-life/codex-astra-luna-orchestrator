@@ -24,9 +24,8 @@ Root-only is appropriate for a trivial known edit/answer or a genuinely insepara
 small task. Explicit requests for independent review, independent test execution or
 delegated work override this shortcut. On substantive work, skipping delegation requires a concrete exception:
 the user prohibited it, tools/models are unavailable, or ownership cannot safely be
-separated. State that reason. A full four-thread budget means queue the next role,
-not duplicate a worker's job in the root. Role similarity is not an exception: use
-the tie-breaks below. Keep useful independent work progressing while workers run.
+separated. State that reason. Role similarity is not an exception: use the tie-breaks
+below. Keep useful independent work progressing while workers run.
 
 | Next deliverable / trigger | Exact role and model | Boundary / completion |
 | --- | --- | --- |
@@ -58,24 +57,32 @@ these specialties; state why none fits. All eight roles need not run on every ta
 
 Named files pin model and effort. Do not claim a prose request changed those pins.
 Keep Sol reviewer at High; no automatic XHigh/Max escalation or review committees.
-For difficult work, obtain a better-scoped Sol investigation, not extra agents doing
-the same thing. Review explicitly requested work and material changes (contracts,
-security/data, behavior across components, or user-facing flows) in a fresh reviewer
-context once stable. Skip ceremonial independent review for typos/trivial edits.
-Sol planning and an implementer's self-check are not independent review, even when
-the reviewer uses the same model. Keep the author and reviewer in separate contexts.
+For difficult work, obtain a better-scoped Sol investigation. Use a fresh reviewer
+for the initial review of requested or material work (contracts, security/data,
+cross-component behavior, or user-facing flows). Reuse that reviewer for focused
+rechecks while independence and scope remain valid. Skip ceremonial review for
+trivial edits. Keep author and reviewer in separate contexts.
 
 Reuse still-valid test evidence. Delegate a tester for independent execution,
 reproduction, expensive checks or missing assigned coverage, not merely to repeat
 one already-passing command. If ambiguity, permissions or capability blocks progress,
 return exact evidence and the missing decision; do not spin retries or raise effort.
 
+For release-like work, record the user's acceptance criteria before implementation
+and check behavior against them before packaging. Identify the actual packaged
+artifact by version or digest, then run required artifact-specific release gates.
+If it changes, recheck affected evidence and gates.
+
 ## Execute and finish
 
 Keep at most four spawned threads open; no recursive worker teams. Assign exclusive
-writable paths, acceptance criteria and dependencies. Reuse a worker for the same
-coherent task; close completed threads. Read [delegation](references/delegation.md)
-for assignment/result contracts, trigger examples and exception reporting.
+writable paths, acceptance criteria and dependencies. Start with one or two useful
+owners, adding more for distinct deliverables. Check existing owners and evidence
+before spawning. If capacity is full, queue distinct work for the next available
+slot rather than doing that work inline. Wait only when progress depends on an agent
+result; otherwise keep advancing unblocked work. Retire agents when ownership ends
+and the runtime supports closing their threads. Read
+[delegation](references/delegation.md) for examples and assignment contracts.
 
 Before UI delegation, parent establishes/verifies the headed browser, server and
 shared session where supported, then passes URL/session/viewports. Do not fabricate

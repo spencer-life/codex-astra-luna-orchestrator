@@ -36,7 +36,7 @@ below. Keep useful independent work progressing while workers run.
 | Find an unknown root cause or implement coupled state/logic under an accepted contract | engineer / Sol High | Diagnose and implement; escalate new contracts to parent/architect |
 | Inspect screens, operate a browser, fix responsive/layout behavior or implement visual UI | ui_specialist / Terra XHigh | Explicit inspection/implementation mode; no backend ownership |
 | Produce separate execution evidence, reproduction or expressly assigned tests | tester / Luna High | Commands/results and coverage; no production fixes or signoff |
-| Critique an existing plan/diff/design, or independently check material work before acceptance | reviewer / Sol High | Fresh no-edit context, actionable findings; not authoring/planning |
+| Critique an existing plan/diff/design, or independently check material work before acceptance | reviewer / Sol High | Independent no-edit context and actionable findings |
 
 ## Resolve overlaps without spawning duplicates
 
@@ -59,9 +59,11 @@ Named files pin model and effort. Do not claim a prose request changed those pin
 Keep Sol reviewer at High; no automatic XHigh/Max escalation or review committees.
 For difficult work, obtain a better-scoped Sol investigation. Use a fresh reviewer
 for the initial review of requested or material work (contracts, security/data,
-cross-component behavior, or user-facing flows). Reuse that reviewer for focused
-rechecks while independence and scope remain valid. Skip ceremonial review for
-trivial edits. Keep author and reviewer in separate contexts.
+cross-component behavior, or user-facing flows). For a focused recheck of the same
+deliverable, follow up with the existing independent reviewer, including across user
+turns. Start fresh if the user requests fresh eyes or the reviewer is unavailable,
+no longer independent, or facing a distinct review scope. Skip ceremonial review
+for trivial edits. Keep author and reviewer in separate contexts.
 
 Reuse still-valid test evidence. Delegate a tester for independent execution,
 reproduction, expensive checks or missing assigned coverage, not merely to repeat

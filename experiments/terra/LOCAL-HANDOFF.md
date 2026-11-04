@@ -8,7 +8,7 @@ including your review, evaluator, fallback or escalation agents. Use Sol High fo
 independent review and keep its context separate from the author.
 
 Repository: `spencer-life/codex-astra-luna-orchestrator`.
-Branch: `experiment/terra-6.1-orchestrator`; draft comparison PR #6 stays unmerged.
+Source branch: `experiment/terra-6.1-orchestrator`.
 Verify the delivered commit and review any subsequent remote changes before execution.
 Read applicable AGENTS.md, TERRA.md, this handoff, the skill, roles and launcher.
 Do not redesign the architecture, merge personal/main, or make this globally default.
@@ -50,7 +50,7 @@ configuration. Launch a NEW session; do not claim files changed an existing root
 
 Use a fresh Sol High reviewer for source and local activation. Start with a bounded
 smoke sample from evals/RUNBOOK.md, especially no-Astra selection, worker vs engineer,
-and reviewer vs tester. The full fourteen-case matrix is for later targeted coverage;
+and reviewer vs tester. Use the full case catalog for later targeted coverage;
 do not burn usage on repeated full runs. Withhold rubric/expected roles from the
 evaluated agent; judge actual traces/artifacts, not assertions. Establish the browser
 and server/session before UI delegation. Record unavailable browser/device coverage.

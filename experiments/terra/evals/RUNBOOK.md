@@ -9,9 +9,9 @@ escalation. The independent evaluator is a fresh Sol 6.1 High context.
 
 Start with a small targeted smoke sample: `known-implementation`, `coupled-debugging`
 and `independent-review`, plus actual configuration evidence showing no Astra.
-Use `execution-only` to check tester/reviewer ambiguity if it appears. The fourteen
-cases are a coverage catalog, not a command to run fourteen full workflows after
-every edit. Exercise other roles when changing their routes or before broader
+Use `execution-only` to check tester/reviewer ambiguity and `release-follow-up`
+to check assignment reuse and release sequencing. The cases are a coverage
+catalog. Exercise other roles when changing their routes or before broader
 promotion; record untested coverage. Do not repeat baseline A/B tests on every patch.
 Keep at most four concurrent children and no recursive teams. Prefer serial cases.
 
@@ -24,6 +24,11 @@ Record before/after bytes. Give the evaluated agent only its request, writable s
 raw files, available tool/session facts and selected skill. Withhold rubric.json,
 expected_roles, suspected bugs and prior results. Do not describe an expected route
 in the evaluation prompt; the point is to observe the skill's decision.
+
+For a case with `follow_up`, save the first result. Submit the fixture's `follow_up`
+field as the next user turn in the same session, with child threads available where supported.
+Capture both artifact versions and the child thread IDs. If resumption cannot
+reach the earlier children, record that capability gap separately from reuse.
 
 The reviewer receives the separate rubric after execution. expected_roles applies
 when required capabilities exist; grade a real unavailable-capability exception
@@ -58,8 +63,11 @@ without changing stable settings. Repeated representative measurements are neede
 for a speed/quality claim, but not for every instruction repair.
 
 Grade accepted requirements, missed defects, unauthorized actions, routing mistakes,
-repair turns, elapsed time and recorded usage. API equivalents are not actual
-subscription charges. A correct artifact does not erase an unauthorized action.
+repair turns, elapsed time and recorded usage. For a coordination change, also
+record unique children, follow-ups, overlap and time waiting on child results.
+Separate cached input, uncached input and output when the telemetry exposes them.
+API equivalents are not actual subscription charges. A correct artifact does not
+erase an unauthorized action.
 Retain concrete exceptions and untested cases in the report. No provider-level model
 restriction is claimed merely because the launcher and skill reject Astra choices.
 

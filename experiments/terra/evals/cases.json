@@ -139,6 +139,21 @@
       },
       "request": "Independently critique the existing proposal against the requirements. Do not author a replacement design or implement anything. Report concrete inconsistencies and what must be resolved before acceptance.",
       "writable_paths": []
+    },
+    {
+      "id": "release-follow-up",
+      "files": {
+        "SPEC.md": "Implement build_report(attempts) in report.py. Return an object with a rows array. Include only completed attempts with at least 22 correct, in input order. Each row contains exactly learner and correct. The CLI reads attempts.json and emits the report as JSON. Verify the behavior against the supplied attempts before writing the release artifact.\n",
+        "attempts.json": "[{\"learner\":\"Mira\",\"correct\":22,\"complete\":true},{\"learner\":\"Jo\",\"correct\":21,\"complete\":true},{\"learner\":\"Kai\",\"correct\":25,\"complete\":false},{\"learner\":\"Ari\",\"correct\":25,\"complete\":true}]\n",
+        "report.py": "import json\nfrom pathlib import Path\n\ndef build_report(attempts):\n    raise NotImplementedError\n\nif __name__ == '__main__':\n    print(json.dumps(build_report(json.loads(Path('attempts.json').read_text()))))\n",
+        "release.json": ""
+      },
+      "request": "Implement the report using SPEC.md. Independently review the implementation against the accepted requirements before generating release.json from the CLI. Verify that the saved file matches the checked report and return the SHA-256 of the saved file. This is a local fixture. Only report.py and release.json may change.",
+      "follow_up": "Change the release report to include all completed attempts. Keep the input order and omit unfinished attempts. Add a result field to each row with pass for 22 or more correct and retry otherwise. Have the changed behavior independently checked before refreshing release.json. The same file scope and saved-file verification apply.",
+      "writable_paths": [
+        "report.py",
+        "release.json"
+      ]
     }
   ]
 }

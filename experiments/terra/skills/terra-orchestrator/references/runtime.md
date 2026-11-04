@@ -20,16 +20,15 @@ evaluator, then compare observed artifacts and agent activity against it.
 ## Choose the activation path
 
 For an existing local setup that links to this checkout, review and fast-forward
-the source, then verify what a new session loads. Check the active root selection
-against the bundle's supported pairs, separately from the skill and role files.
-If it falls outside those pairs, report the selection as a blocker and ask the
-user to select a supported root before proceeding with the Terra workflow.
+the source, then verify what a new session loads. The user selects the root model
+in Codex. Record the effective selection separately from the loaded skill and
+named roles.
 
-For a session-only trial, use the supplied launcher. It applies root and named-role
-overrides for that session. Its preflight checks the clean committed source, branch,
-origin, installed CLI, and fresh model catalog. Native startup and launcher
-preflight are separate paths. After the trial, start Codex normally to return to the
-installed defaults.
+For a session-only trial, use the supplied launcher. It reads the bundle's root and
+named-role settings and applies them for that session. Its preflight validates the
+configured model and effort pairs against a fresh catalog and checks the source,
+branch, origin, and CLI. Native startup and launcher preflight are separate paths.
+After the trial, start Codex normally to return to the installed defaults.
 
 Preserve user and project permissions, approval settings, providers, plugins, and
 service tier. If the required CLI, catalog, model, tools, or role loading is

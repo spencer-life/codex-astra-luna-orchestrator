@@ -5,11 +5,10 @@ description: Route substantive coding and UI work to the Terra workflow's named 
 
 # Terra orchestration
 
-The root owns intent, decomposition, integration, verification, and delivery. Use
-the selected root model and effort from the bundle's supported Terra, Sol, and
-Luna pairs. The Terra bundle defaults to Terra 6.1 High. Delegate through the bundled
-named roles and use the model and effort pinned in each role file. Follow the user's
-scope, project requirements, and existing permissions.
+The root owns intent, decomposition, integration, verification, and delivery.
+Delegate through the bundled named roles and use the model and effort pinned in
+each role file. Follow the user's scope, project requirements, and existing
+permissions.
 
 ## Route the next deliverable
 

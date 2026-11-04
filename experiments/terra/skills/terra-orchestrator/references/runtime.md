@@ -1,45 +1,34 @@
-# Runtime boundaries
+# Runtime and activation
 
-Source lives under `experiments/terra/` on `experiment/terra-6.1-orchestrator`.
-The launcher is `scripts/terra_orchestrator.py`. Original `orchestrator/` and its
-receipt-bound installer remain the stable setup; never apply this branch through
-that installer, rewrite its receipt, or modify personal/main to activate the trial.
+Use `experiments/terra/` on `experiment/terra-6.1-orchestrator` as the Terra source.
+Use `scripts/terra_orchestrator.py` for session-only activation. Maintain the stable
+installer, receipt, and branches through their own workflow.
 
-## Models and inherited instructions
+## Verify effective routing
 
-Only Terra, Sol and Luna are authorized. Astra is not a reviewer, fallback, evaluator
-or escalation option, even if the account catalog advertises it. The source validator
-rejects any model outside the allowlist. Reviewer is Sol 6.1 High in a fresh context.
-The launch prompt repeats this restriction and directs the root to the routing gate.
-Other inherited custom roles can remain visible, but this workflow must not call
-ones outside the bundled roster or route around the cost restriction. These are
-configuration checks and instructions, not a provider-level billing/model firewall.
-Observe actual root/child settings and any inherited conflict during local adoption;
-stop/report an unauthorized route rather than silently editing global settings.
+Use the bundled named roles with their pinned model and effort. The source
+validator checks the Terra, Sol, and Luna model and effort pairs in the bundle.
+Treat catalog results as advertised availability. Confirm the actual root, child
+roles, models, efforts, loaded skill, and available tools in a new session using
+raw settings and spawn events. Report conflicting settings or missing capabilities
+with the evidence needed to resolve them.
 
-## Session-only activation
+Verify behavior with a targeted, blinded case from the Terra evaluation catalog.
+Give the evaluated session the request and fixture. Keep the grading rubric with the
+evaluator, then compare observed artifacts and agent activity against it.
 
-Named Codex profiles do not currently switch the entire agent roster. Use the supplied
-launcher, which overrides root/default-agent settings and the eight role-file paths
-for that session and references the skill by absolute source path. It does not install
-a competing globally auto-selected skill or replace global AGENTS.md/config/auth.
-Normal Codex may still update ordinary session state. User/project permissions,
-approvals, providers, MCP/plugins, service tier/Fast and voice settings stay local.
+## Choose the activation path
 
-Before launch verify actual executor, installed version/help/schema, worktree and
-fresh catalog. The launcher checks clean committed source, branch/origin and a fresh
-catalog, then rejects source drift. Catalog support is not a successful model request.
-Verify actual parent/child selections, loaded skill and tools in a NEW local session
-using raw config/event evidence, not model self-identification. Role-file pins win
-over spawn defaults; prose does not override them. No silent model aliases.
+For an existing local setup that links to this checkout, review and fast-forward
+the source, then verify what a new session loads. Check the saved root selection
+separately from the skill and role files.
 
-Role instructions do not create separate filesystem sandboxes. Parent permissions
-and existing approval controls remain the enforcement boundary. No UI implementation
-permission grants unrelated external actions. This experiment does not force the
-currently unavailable experimental context-management option or repair stable drift.
+For a session-only trial, use the supplied launcher. It applies root and named-role
+overrides for that session. Its preflight checks the clean committed source, branch,
+origin, installed CLI, and fresh model catalog. Native startup and launcher
+preflight are separate paths. After the trial, start Codex normally to return to the
+installed defaults.
 
-If models/tools/custom-role overrides/skill loading fail, report the specific blocker.
-No fabricated catalog, automatic reinstall, permissions relaxation or Astra fallback.
-Exit the trial session and start Codex normally for the unchanged stable workflow;
-existing sessions do not change retroactively. The local handoff must inspect any
-old installed trial/wrapper and preserve work while updating to this no-Astra version.
+Preserve user and project permissions, approval settings, providers, plugins, and
+service tier. If the required CLI, catalog, model, tools, or role loading is
+unavailable, report the specific blocker and the scope already verified.

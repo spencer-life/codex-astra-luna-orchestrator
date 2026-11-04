@@ -1,99 +1,85 @@
 ---
 name: terra-orchestrator
-description: Delegate substantive coding and UI work to distinct Terra, Sol and Luna specialists in the selected Terra workflow. Route discovery, planning, implementation, testing and independent review by concrete deliverable; keep trivial edits root-only.
+description: Route substantive coding and UI work to the Terra workflow's named specialists. Assign distinct deliverables, reuse owners across turns, and keep small edits with the root.
 ---
 
-# Terra orchestration experiment
+# Terra orchestration
 
-This selected workflow replaces the stable astra-orchestrator topology for this
-session, not project requirements, permissions or user authority. Root defaults to
-Terra 6.1 High and owns intent, decomposition, integration, verification and delivery.
-**No Astra model for any work, review, fallback or escalation.** Use only Terra,
-Sol and Luna. Historical repository/skill names are not model selections. Do not
-use an inherited/unlisted agent to evade this roster or the no-Astra instruction.
+The root owns intent, decomposition, integration, verification, and delivery. Use the
+selected root model. The Terra bundle defaults to Terra 6.1 High. Delegate through
+the bundled named roles and use the model and effort pinned in each role file.
+Follow the user's scope, project requirements, and existing permissions.
 
-## Routing gate: decide before doing substantive work
+## Route the next deliverable
 
-At task entry and each material scope change, identify the next concrete deliverable
-using the table below. For a substantive matching deliverable, delegate to its named
-role before doing that work yourself. Do not finish discovery/implementation in the
-root and then invent a token delegation at the end. State the selected role and
-bounded assignment briefly, not private reasoning or a ritual eight-role checklist.
+At task entry and each material scope change, identify the next concrete deliverable.
+For substantive work that matches a named role, delegate before starting the work
+and briefly state the role and assignment. Keep small known edits and inseparable
+small tasks with the root. Honor explicit requests for independent review, test
+execution, or delegation.
 
-Root-only is appropriate for a trivial known edit/answer or a genuinely inseparable
-small task. Explicit requests for independent review, independent test execution or
-delegated work override this shortcut. On substantive work, skipping delegation requires a concrete exception:
-the user prohibited it, tools/models are unavailable, or ownership cannot safely be
-separated. State that reason. Role similarity is not an exception: use the tie-breaks
-below. Keep useful independent work progressing while workers run.
+If a fitting role or capability is unavailable, delegation is outside the user's
+scope, or the work cannot be separated safely, state the exception and complete
+the useful work within the root's scope. Report any required specialist check that
+remains blocked.
 
-| Next deliverable / trigger | Exact role and model | Boundary / completion |
+| Deliverable | Role and pin | Expected result |
 | --- | --- | --- |
-| Locate unknown internal ownership or trace a multi-file call/data path | explorer / Luna Medium | Map files, symbols, constraints; no fix or external research |
-| Resolve an unverified external API, dependency/version or tool fact | researcher / Luna Medium | Primary-source answer with version; no local code mapping |
-| Choose unresolved contracts, invariants or consequential design tradeoffs | architect / Sol High | Recommend plan before coding; no implementation or own signoff |
-| Implement a bounded known approach with settled acceptance criteria | worker / Luna High | Own assigned files and focused self-checks; no speculative design |
-| Find an unknown root cause or implement coupled state/logic under an accepted contract | engineer / Sol High | Diagnose and implement; escalate new contracts to parent/architect |
-| Inspect screens, operate a browser, fix responsive/layout behavior or implement visual UI | ui_specialist / Terra XHigh | Explicit inspection/implementation mode; no backend ownership |
-| Produce separate execution evidence, reproduction or expressly assigned tests | tester / Luna High | Commands/results and coverage; no production fixes or signoff |
-| Critique an existing plan/diff/design, or independently check material work before acceptance | reviewer / Sol High | Independent no-edit context and actionable findings |
+| Trace internal ownership or a multi-file call or data path | explorer / Luna Medium | Map relevant files, symbols, and constraints |
+| Verify an external API, version, or tool fact | researcher / Luna Medium | Return primary-source evidence for the relevant version |
+| Decide a consequential contract, invariant, or design tradeoff | architect / Sol High | Recommend a decision and give the implementer its constraints |
+| Implement a settled approach with clear acceptance criteria | worker / Luna High | Change the assigned files and run focused checks |
+| Diagnose an unknown cause or implement coupled logic within an accepted contract | engineer / Sol High | Reproduce the issue or implement the change and verify the result |
+| Inspect rendered UI or implement visual and interaction changes | ui_specialist / Terra XHigh | Return rendered observations or verified changes in the assigned mode |
+| Reproduce a failure, execute checks independently, or add assigned tests | tester / Luna High | Report commands, outcomes, and coverage |
+| Critique a plan, diff, design, or material result | reviewer / Sol High | Inspect independently in read-only mode and return actionable findings |
 
-## Resolve overlaps without spawning duplicates
+Use the table to resolve overlaps. Give internal mapping to the explorer and
+external facts to the researcher. Have the architect settle the contract before
+an engineer or worker implements it. Use a worker for a known approach and an
+engineer for an unknown cause or coupled logic. Give visual work and backend logic
+separate ownership. Use the tester for execution evidence and the reviewer for
+independent judgment.
 
-- **Explorer vs researcher:** internal code path versus external/version fact.
-- **Architect vs engineer:** choose/change the contract versus solve within it.
-- **Worker vs engineer:** known approach versus unresolved cause or coupled reasoning.
-- **UI specialist vs engineer:** rendered appearance/interactions versus backend/data
-  logic. Split mixed tasks by owned files, not two agents editing the same component.
-- **Tester vs reviewer:** execute checks versus judge correctness and missing risks.
-- **Architect vs reviewer:** create a plan versus independently critique an existing one.
+## Coordinate the work
 
-One named owner per deliverable. Use multiple roles only for distinct outputs or
-phases. Never substitute generic Sol for a role that fits just because it is
-convenient. Generic fallback is Sol Medium only for an unusual bounded task outside
-these specialties; state why none fits. All eight roles need not run on every task.
+Start with one or two useful owners. Add distinct assignments as needed, up to four
+concurrent child threads. Keep delegation one level deep, with the root assigning
+all child work. Give each deliverable one owner with exclusive writable paths,
+clear acceptance criteria, and known dependencies.
+Check existing owners and evidence before spawning. Follow up with the same owner
+for related work. At capacity, queue distinct work for the next available slot.
 
-## Reasoning, evidence and cost
+Advance independent root work while agents run. Wait when an agent result is needed
+to continue. Act on new evidence, and retry after a material change to a blocker.
+Retire agents when ownership ends and the runtime supports closing their threads.
+For multi-owner assignments, independent reviews, or handoffs, use
+[delegation](references/delegation.md).
 
-Named files pin model and effort. Do not claim a prose request changed those pins.
-Keep Sol reviewer at High; no automatic XHigh/Max escalation or review committees.
-For difficult work, obtain a better-scoped Sol investigation. Use a fresh reviewer
-for the initial review of requested or material work (contracts, security/data,
-cross-component behavior, or user-facing flows). For a focused recheck of the same
-deliverable, follow up with the existing independent reviewer, including across user
-turns. Start fresh if the user requests fresh eyes or the reviewer is unavailable,
-no longer independent, or facing a distinct review scope. Skip ceremonial review
-for trivial edits. Keep author and reviewer in separate contexts.
+## Verify and deliver
 
-Reuse still-valid test evidence. Delegate a tester for independent execution,
-reproduction, expensive checks or missing assigned coverage, not merely to repeat
-one already-passing command. If ambiguity, permissions or capability blocks progress,
-return exact evidence and the missing decision; do not spin retries or raise effort.
+Use a fresh independent Sol High reviewer for the initial review of requested or
+material work, such as contracts, security, data, cross-component behavior, or
+user-facing flows. Follow up with the same independent reviewer for focused rechecks
+of the same deliverable, including across turns. Start a fresh review when the user
+requests fresh eyes, the review scope changes, or the original reviewer is unavailable
+or loses independence. Use direct checks for trivial edits.
 
-For release-like work, record the user's acceptance criteria before implementation
-and check behavior against them before packaging. Identify the actual packaged
-artifact by version or digest, then run required artifact-specific release gates.
-If it changes, recheck affected evidence and gates.
+Reuse applicable test evidence. Assign a tester when independent execution,
+reproduction, expensive checks, or missing coverage adds useful evidence. When an
+ambiguity, permission, or capability blocks progress, report the observed blocker and
+the decision or capability needed.
 
-## Execute and finish
+For release work, record the user's acceptance criteria before implementation and
+check behavior against them before packaging. Identify the packaged artifact by
+version or digest, then run its required release checks. When the artifact changes,
+rerun affected checks and any gates tied to the exact candidate.
 
-Keep at most four spawned threads open; no recursive worker teams. Assign exclusive
-writable paths, acceptance criteria and dependencies. Start with one or two useful
-owners, adding more for distinct deliverables. Check existing owners and evidence
-before spawning. If capacity is full, queue distinct work for the next available
-slot rather than doing that work inline. Wait only when progress depends on an agent
-result; otherwise keep advancing unblocked work. Retire agents when ownership ends
-and the runtime supports closing their threads. Read
-[delegation](references/delegation.md) for examples and assignment contracts.
+Before delegating UI work, verify the required server, headed browser, and shared session
+where supported. Give the specialist the URL, session, and target viewports. Apply
+the project's design workflow and verify the rendered desktop and mobile behavior.
+Report the actual interaction evidence and any missing visual coverage.
 
-Before UI delegation, parent establishes/verifies the headed browser, server and
-shared session where supported, then passes URL/session/viewports. Do not fabricate
-attachment or screenshots. Apply the target project's actual design workflow and
-verify rendered desktop/mobile states; source review and tests are not visual QA.
-
-Inspect integrated diffs and raw evidence, resolve material findings, rerun affected
-checks, and report completed work and gaps. Summarize roles actually used and any
-substantive routing exception. No claim of delegation without a real spawn result.
-Read [runtime](references/runtime.md) for activation and local compatibility. Static
-configuration tests do not prove model routing; use the blinded evaluation cases to
-check the actual behavior without loading the grading answers into the worker.
+Inspect the integrated result, resolve material findings, and rerun affected checks.
+Report the roles used, confirmed outcomes, and remaining gaps from actual evidence.
+For activation or model verification, use [runtime](references/runtime.md).

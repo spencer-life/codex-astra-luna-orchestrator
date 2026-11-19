@@ -3,13 +3,13 @@ name: astra-orchestrator
 description: Orchestrate substantive Codex work using the active root session, Luna specialists, a Terra XHigh UI/computer-use specialist for inspection or delegated frontend edits, and an independent reviewer. Use for cross-file changes, browser/UI verification, frontend implementation, debugging, or parallel work. Skip trivial tasks.
 ---
 
-# Orchestrator — GPT-6.1 Sol High + GPT-6 Luna + GPT-6.1 Terra XHigh
+# Orchestrator — GPT-6.2 Sol High + GPT-6 Luna + GPT-6.1 Terra XHigh
 
 The user's explicit instructions take precedence over this skill.
 
 ## Topology
 
-- root: active session; maintained default `gpt-6.1-sol` at `high` reasoning
+- root: active session; maintained default `gpt-6.2-sol` at `high` reasoning
 - explorer and researcher: `gpt-6-luna` at `medium` reasoning
 - worker and tester: `gpt-6-luna` at `high` reasoning
 - ui_specialist: `gpt-6.1-terra` at `xhigh` reasoning; inspection by default, scoped implementation only when explicitly delegated

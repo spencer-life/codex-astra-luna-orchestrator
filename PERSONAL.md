@@ -24,7 +24,7 @@ installed copies as the normal update path.
 
 ## Current defaults and routing
 
-The maintained default root is **GPT-6.1 Sol High**. The active session model is the
+The maintained default root is **GPT-6.2 Sol High**. The active session model is the
 root, so an explicit picker or CLI choice such as GPT-6 Luna is respected for the
 whole primary thread rather than being overwritten by the skill.
 
@@ -117,7 +117,7 @@ apply files or run a model request. The standalone validation, test, and compati
 tasks remain available; `orchestrator:compatibility -- --model-catalog PATH` accepts
 an explicitly supplied catalog, and `--refresh-catalog` captures a new one.
 
-The source validator uses the documented model/effort matrix checked **2026-10-26**.
+The source validator uses the documented model/effort matrix updated **2026-11-19** to include GPT-6.2 Sol.
 That is structural evidence, not proof of account availability. Before installing new
 model selections, run the compatibility check against a fresh local Codex model
 catalog and verify the effective selections in a new session. Never silently alias an

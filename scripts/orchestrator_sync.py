@@ -65,8 +65,7 @@ UPSTREAM_ROLE_NAMES = (
     "researcher",
     "reviewer",
 )
-# Personal roles may not exist in the original upstream profile.
-ROLE_NAMES = (*UPSTREAM_ROLE_NAMES, "ui_specialist")
+ROLE_NAMES = UPSTREAM_ROLE_NAMES
 SKILL_PATH = Path("orchestrator/skills/astra-orchestrator/SKILL.md")
 REFERENCE_NAMES = ("maintenance.md", "semble.md")
 REFERENCE_FILES = tuple(SKILL_PATH.parent / "references" / name for name in REFERENCE_NAMES)
@@ -133,18 +132,19 @@ V2_DESTINATIONS.update({
     path: Path(".agents/skills/astra-orchestrator/references") / path.name
     for path in REFERENCE_FILES
 })
-V3_DESTINATIONS = {
-    source: dest for source, dest in DESTINATIONS.items()
-    if source != Path("orchestrator/agents/ui_specialist.toml")
-}
+UI_ROLE_SOURCE = Path("orchestrator/agents/ui_specialist.toml")
+UI_ROLE_DESTINATION = Path(".codex/agents/ui_specialist.toml")
+# Keep old receipt path sets exact so a retirement never trusts an unowned file.
+V4_V5_DESTINATIONS = {**DESTINATIONS, UI_ROLE_SOURCE: UI_ROLE_DESTINATION}
 DESTINATIONS_BY_VERSION = {
     1: V1_DESTINATIONS,
     2: V2_DESTINATIONS,
-    3: V3_DESTINATIONS,
-    4: DESTINATIONS,
+    3: DESTINATIONS,
+    4: V4_V5_DESTINATIONS,
+    5: V4_V5_DESTINATIONS,
+    6: DESTINATIONS,
 }
 V1_ADDED_SOURCES = set(REFERENCE_FILES)
-V4_ADDED_SOURCES = {Path("orchestrator/agents/ui_specialist.toml")}
 MIGRATION_RETIREMENTS = {
     1: {
         Path(".codex/agents/research_verifier.toml"),
@@ -154,8 +154,10 @@ MIGRATION_RETIREMENTS = {
         Path(".codex/agents/solver.toml"),
         Path(".codex/agents/semble-search.toml"),
     },
+    4: {UI_ROLE_DESTINATION},
+    5: {UI_ROLE_DESTINATION},
 }
-STATE_VERSION = 4
+STATE_VERSION = 6
 # Documentation snapshot, not an assertion about any account's live availability.
 # https://developers.openai.com/api/docs/models/gpt-6.1-terra
 # https://developers.openai.com/api/docs/models/gpt-6.2-sol
@@ -725,7 +727,7 @@ def get_managed_settings(doc: Any, *, version: int = STATE_VERSION) -> dict[str,
             fail(f"installed config is missing managed setting: {key}")
         result[key] = plain_value(doc[key])
 
-    if version >= 3:
+    if version in (3, 4, 6):
         features = doc.get("features")
         context_management = features.get("context_management") if isinstance(features, dict) else None
         if not isinstance(context_management, dict) or "experimental_mode" not in context_management:
@@ -780,13 +782,9 @@ def merged_config_bytes(
 
 
 def migration_additions(state: dict[str, Any] | None, home: Path) -> set[Path]:
-    if not state or state["version"] == STATE_VERSION:
+    if not state or state["version"] != 1:
         return set()
-    # v1 also lacks skill references; v1/v2/v3 all lack the Terra role.
-    sources = set(V4_ADDED_SOURCES)
-    if state["version"] == 1:
-        sources.update(V1_ADDED_SOURCES)
-    return {home / DESTINATIONS[path] for path in sources}
+    return {home / DESTINATIONS[path] for path in V1_ADDED_SOURCES}
 
 
 def migration_retirements(state: dict[str, Any] | None, home: Path) -> set[Path]:
@@ -1321,7 +1319,8 @@ def run_apply(repo: Path, home: Path, baseline_path: str | None) -> dict[str, An
             fail("source HEAD changed during apply preparation; retry after review")
         assert_source_matches_commit(repo, final_identity["commit"], contents)
         unchanged = not retirements and all(path.exists() and path.read_bytes() == data for path, data in targets.items())
-        if unchanged and state and state.get("source_commit") == identity["commit"]:
+        if (unchanged and state and state["version"] == STATE_VERSION
+                and state.get("source_commit") == identity["commit"]):
             return {"status": "already-applied", "commit": identity["commit"], "state_path": str(state_path)}
         backup, manifest = make_backup(state_dir, destinations, state_path, home, snapshot)
         # Recheck after the backup has captured the original bytes.  If a

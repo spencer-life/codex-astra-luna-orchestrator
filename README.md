@@ -21,13 +21,11 @@ mise run orchestrator:status
 The default root is GPT-6.2 Sol at high reasoning. A model or effort selected in the
 Codex picker/CLI remains the active root for that session, so a Luna-only session is
 supported without rewriting the shared configuration. Explorer/researcher use GPT-6
-Luna Medium; worker/tester and generic fallback use GPT-6 Luna High; Terra
-ui_specialist uses GPT-6.1 Terra Extra High for computer-use, default no-edit
-inspection, and explicitly delegated scoped UI implementation; the independent
-no-edit reviewer uses GPT-6.1 Sol High. Spawned concurrency is capped
-at four. Terra edits project files only in explicitly delegated implementation
-mode; inspection is the default. Actual tool permissions and sandboxing are
-inherited from the parent Codex session.
+Luna Medium; worker/tester and generic fallback use GPT-6 Luna High. The
+independent no-edit reviewer uses GPT-6.2 Sol High. The root directly handles
+visual design, frontend work that needs visual judgment, and browser verification.
+Spawned concurrency is capped at four. Actual tool permissions and sandboxing
+are inherited from the parent Codex session.
 
 The routing skill and role instructions follow the original upstream templates,
 with personal model and effort selections retained. The root owns architecture,
@@ -39,19 +37,18 @@ subagent. The maintained configuration enables experimental context management.
 `max_depth` is no longer managed because current Codex V2 ignores that V1-only
 setting.
 
-The v4 maintained source contains **ten files**: one config fragment, six role files,
-one routing skill, and two on-demand references. Guarded migration supports v1,
-v2, and v3 receipts, adds the single Terra specialist without overwriting pre-existing files, retires
-obsolete roles for v1/v2, and preserves unrelated local configuration.
+The v6 maintained source contains **nine files**: one config fragment, five role
+files, one routing skill, and two on-demand references. Guarded migration accepts
+v1–v5 receipts. It backs up and retires only the matching, receipt-owned UI
+specialist from v4/v5, and leaves unowned files alone.
 
 The repository deliberately does **not** own the full `~/.codex/config.toml`.
 Workspace Tools permission profiles, Auto-review/approval choices, MCPs/plugins,
 service tier, audio devices, voice selection, desktop preferences, credentials, and
 machine-specific settings stay local.
 
-Codex CLI 0.156.1 was the v3 validation target; the Terra role requires Codex CLI
-0.159.0 or newer and an available `gpt-6.1-terra/xhigh` catalog entry. Voice conversations
-were enabled in 0.156.1; no portable voice flag is required here.
+Before applying, use a Codex CLI with a current catalog that advertises
+`gpt-6.2-sol/high` and the remaining Luna model/effort pairs.
 Machine-local audio and realtime preferences remain outside the managed fragment.
 
 The skill's filesystem path and frontmatter name remain `astra-orchestrator` for

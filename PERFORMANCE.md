@@ -5,7 +5,7 @@ needs.
 
 ## Selected baseline
 
-The v4 routing policy is:
+The v6 routing policy is:
 
 | Role | Model / effort |
 | --- | --- |
@@ -14,20 +14,17 @@ The v4 routing policy is:
 | researcher | GPT-6 Luna Medium |
 | worker | GPT-6 Luna High |
 | tester | GPT-6 Luna High |
-| reviewer | GPT-6.1 Sol High |
-| ui_specialist | GPT-6.1 Terra Extra High (`xhigh`); inspection by default, scoped UI implementation on delegation |
+| reviewer | GPT-6.2 Sol High |
 | generic fallback | GPT-6 Luna High |
 
 Semble is a direct MCP/CLI tool, not a subagent. Spawned concurrency is capped at
-four. Experimental context management is enabled. Terra is one opt-in
-browser/computer-use/frontend specialist with explicit inspection and
-implementation task modes, not the generic default. No solver,
+four. Experimental context management is enabled. The root handles visual and browser work directly. No solver,
 Semble-search agent, forced Fast mode, or dynamic model router is added.
 Max reasoning is not part of the root or reviewer defaults.
 
 The active primary-session model remains the root. Selecting GPT-6 Luna in the
 picker is therefore a supported fast/cheap root session; the independent reviewer
-uses GPT-6.1 Sol High when used.
+uses GPT-6.2 Sol High when used.
 
 Use the worker when the solution direction is sufficiently clear. Keep architecture,
 ambiguous cross-component reasoning, and integration with the root. The hard

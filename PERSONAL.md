@@ -10,7 +10,7 @@ The maintained personal source is:
 
 - `orchestrator/config.toml`: default root, experimental context management, and
   four owned `[agents]` settings.
-- `orchestrator/agents/*.toml`: six explicitly configured specialist roles.
+- `orchestrator/agents/*.toml`: five explicitly configured specialist roles.
 - `orchestrator/skills/astra-orchestrator/SKILL.md`: the maintained upstream
   Astra Orchestrator skill, adapted only to this setup's active-root behavior,
   configured model efforts, and reference links.
@@ -34,24 +34,23 @@ Configured specialists:
 - researcher: GPT-6 Luna Medium, read-only
 - worker: GPT-6 Luna High, workspace-write
 - tester: GPT-6 Luna High, workspace-write
-- reviewer: GPT-6.1 Sol High, read-only
-- ui_specialist: GPT-6.1 Terra Extra High (`xhigh`), inspection-only by default; scoped project edits when implementation is expressly delegated
+- reviewer: GPT-6.2 Sol High, read-only
 - generic fallback: GPT-6 Luna High
 
 The maintained skill is based on upstream `donvito/codex-astra-luna-orchestrator`
 commit `f5efba0`, file
 `profiles/GPT6-SolMedium-LunaMax/agents/skills/astra-orchestrator/SKILL.md`.
 The source skill was adapted to preserve this setup's active-root behavior and
-configured specialist efforts, set the reviewer to GPT-6.1 Sol High, and link the
+configured specialist efforts, set the reviewer to GPT-6.2 Sol High, and link the
 two repository reference files required by source validation.
 
 The original five role files in `orchestrator/agents/` follow upstream profile
 `profiles/GPT6-SolMedium-LunaMax/codex/agents/` at commit
 `f5efba0f957a1e3f0671e629ccc2c655725a7e7b`. They retain only this setup's
 current `model` and `model_reasoning_effort` values; all other role content
-comes directly from that upstream profile. The additional `ui_specialist` role is
-personal, not part of the upstream profile; upstream comparisons intentionally
-inspect only the original five roles.
+comes directly from that upstream profile. The root handles visual design,
+UI implementation that needs visual judgment, and browser/computer-use checks.
+Non-visual subtasks can still be delegated when useful.
 
 Keep at most four spawned threads open. The cap is capacity, not a target. No
 `max_depth` setting is managed in v3; current Codex documents that setting as
@@ -72,17 +71,12 @@ do not claim cache or compaction behavior that was not actually observed.
 The public repository does not own `default_permissions`, named `[permissions]`
 profiles such as Workspace Tools, Auto-review/approval configuration, MCP/plugin
 settings, service tier, or sandbox policy. Current custom agents inherit the
-parent sandbox and permissions; inspection-mode no-edit instructions and
-implementation-mode file scopes are instructional, not separate sandbox
-restrictions. The root must delegate UI implementation explicitly.
-The merge/apply path preserves them.
+parent sandbox and permissions. Non-edit instructions are not separate sandbox
+restrictions. The merge/apply path preserves machine-local settings.
 
-The previous v3 setup was validated with Codex CLI **0.156.1**. GPT-6.1 Terra
-requires **Codex CLI 0.159.0 or later**. Before installing v4, confirm the
-installed CLI and a fresh local catalog advertise `gpt-6.1-terra/xhigh`;
-historical 0.156.1 compatibility does not establish v4 compatibility. Audio
-device and realtime preferences remain machine-local and are not added to this
-managed fragment.
+Before applying v6, confirm a fresh local catalog advertises `gpt-6.2-sol/high`
+for root and reviewer and the configured Luna pairs. Audio device and realtime
+preferences remain machine-local.
 
 ## Review, commit, and apply
 
@@ -123,46 +117,20 @@ model selections, run the compatibility check against a fresh local Codex model
 catalog and verify the effective selections in a new session. Never silently alias an
 unavailable model.
 
-## Receipt version 4 migration
+## Receipt version 6 migration
 
-The v4 source contains **ten managed files**: one config fragment, six roles
-(including Terra `ui_specialist`), one skill, and two references.
+The v6 source has nine managed files: config, five roles, one skill, and two
+references. Migration is direct; it never installs the retired UI role on the
+way through.
 
-### From receipt v1
+- v1 adds missing references and retires its two obsolete roles.
+- v2 retires its two obsolete roles; v1/v2 also retire managed `agents.max_depth`.
+- v3 never owned the UI specialist; any custom file at that path is left alone.
+- v4/v5 retire `.codex/agents/ui_specialist.toml` only if it matches the receipt.
+  A missing, changed, or symlinked former role stops the migration.
 
-A direct v1-to-v4 migration:
-
-- adds the two reference files and Terra visual QA role only when their destinations are absent;
-- retires `research_verifier.toml` and `semble-search.toml` only when they still
-  match the v1 receipt;
-- retires the previously managed `agents.max_depth` setting;
-- updates the managed model/context/agent settings to v4.
-
-It does **not** create the old v2 solver on the way through.
-
-### From receipt v2
-
-A direct v2-to-v4 migration:
-
-- adds Terra visual QA role only when its destination is absent;
-- retires `solver.toml` and `semble-search.toml` only when they still match the
-  v2 receipt;
-- retires the previously managed `agents.max_depth` setting;
-- keeps the already managed reference files;
-- updates the managed model/context/agent settings to v4.
-
-### From receipt v3
-
-A direct v3-to-v4 migration adds Terra `ui_specialist.toml` only if that destination
-is absent. Existing v3 files, managed settings, and other local configuration
-are preserved or updated through the same guarded process.
-
-Existing-file drift, missing retired files, symlinks, and ownership collisions stop
-the migration. Apply backs up every affected path and the prior receipt before writes,
-then restores them on rollback when safe.
-
-A genuinely unmanaged installation still requires an explicitly prepared private
-baseline. This remains a maintenance workflow, not a blank-machine installer.
+The prior role, other affected files, and the prior receipt are backed up before
+apply. If application fails, the guarded workflow restores them.
 
 ## Apply protections and recovery
 

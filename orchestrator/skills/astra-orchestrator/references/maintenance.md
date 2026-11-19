@@ -25,23 +25,17 @@ Preserve any unique work durably before cleanup; never discard it as stale witho
 checking. Once the receipt-bound checkout is clean and current, run the guarded
 sync, validate, test, local-catalog compatibility, plan, apply, and status workflow.
 
-## v4 migration
+## v6 migration
 
-Receipt v4 has ten managed files: config, six roles (including Terra `ui_specialist`),
-the skill, and two references.
+The current receipt owns nine files: config, five roles, the skill and two
+references. v1 adds the references and retires obsolete roles; v2 retires its
+obsolete roles. v1/v2 also retire the previously managed `agents.max_depth`.
+v4/v5 back up and retire the UI specialist only if it matches the receipt.
+v1–v3 never owned that role, and a custom file at that path is left alone.
 
-- v1 -> v4 adds the references and `ui_specialist.toml`, retires
-  `research_verifier.toml` and `semble-search.toml`.
-- v2 -> v4 adds `ui_specialist.toml`, retires `solver.toml` and
-  `semble-search.toml`.
-- v3 -> v4 adds only `ui_specialist.toml`.
-- v1/v2 also retire the previously managed `agents.max_depth` setting.
-
-Every new managed destination must be absent; an existing Terra file is a collision,
-not permission to overwrite. Retired files must match their recorded receipts.
-The guarded apply backs up and rolls back new files as well as existing files.
-Do not delete receipts or local files to defeat ownership guards.
-Follow `PERSONAL.md` for deliberate reconciliation and rollback.
+Every new managed destination must be absent. A changed or missing retired file
+blocks migration rather than authorizing an overwrite. Do not delete receipts or
+local files to defeat ownership guards. See `PERSONAL.md` for recovery.
 
 ## Models and runtime compatibility
 
@@ -64,13 +58,9 @@ against a fresh local catalog, then verify effective root and spawned-role selec
 in a new session. Role files pin specialist model/effort. The root is the active
 primary-session model: an explicit picker or CLI choice is respected.
 
-The preceding v3 setup was validated with Codex CLI **0.156.1**.
-GPT-6.1 Terra requires Codex CLI **0.159.0 or later**; before applying v4,
-use an updated compatible stable release and require a fresh local catalog that
-advertises `gpt-6.1-terra/xhigh`. The previous validation is historical,
-not evidence of local v4 compatibility. Audio
-device settings are machine-local, and realtime configuration remains outside this
-managed fragment. Let Codex and the local client own those preferences.
+Verify GPT-6.2 Sol High for the root and reviewer against the current local
+Codex catalog. The root handles actual visual QA; an independent code review is
+not a replacement. Audio and realtime options remain machine-local.
 
 Experimental context management is deliberately enabled in the managed config.
 `max_depth` is deliberately absent; current Codex marks it V1-only and ignored by V2.
@@ -81,9 +71,8 @@ The orchestrator does not own `default_permissions`, Workspace Tools or other na
 `[permissions]` profiles, Auto-review/approval selection, MCP/plugin policy, or
 service tier. Current Codex custom agents inherit the parent's sandbox and
 permissions; the existing specialist `sandbox_mode` entries do not enforce
-role-specific read/write boundaries. Terra's inspection-mode no-edit instruction and implementation-mode file scope
-are not separate sandboxes. Enforce filesystem and action permissions through
-the parent session; do not interpret mode=implementation as broader authority. Preserve the active local permission configuration.
+role-specific read/write boundaries. Enforce filesystem and action permissions
+through the parent session and preserve the active local permission configuration.
 
 After applying changed configuration or instructions, start a new Codex session.
 The workflow does not restart existing sessions or rewrite an explicitly selected

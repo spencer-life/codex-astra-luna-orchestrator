@@ -1,6 +1,6 @@
 # Performance and measurement
 
-Maintained source: `personal`. Baseline updated **October 26, 2026**. This is an on-demand performance reference, not context every coding turn
+Maintained source: `personal`. Routing baseline updated **November 19, 2026**. This is an on-demand performance reference, not context every coding turn
 needs.
 
 ## Selected baseline
@@ -9,7 +9,7 @@ The v4 routing policy is:
 
 | Role | Model / effort |
 | --- | --- |
-| root | active session; default GPT-6.1 Sol High |
+| root | active session; default GPT-6.2 Sol High |
 | explorer | GPT-6 Luna Medium |
 | researcher | GPT-6 Luna Medium |
 | worker | GPT-6 Luna High |
@@ -40,6 +40,7 @@ selective evidence gates rather than mandatory steps for every trivial edit.
 Primary references:
 
 - [GPT-6 Sol](https://developers.openai.com/api/docs/models/gpt-6-sol)
+- [GPT-6.2 Sol](https://developers.openai.com/api/docs/models/gpt-6.2-sol)
 - [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol)
 - [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna)
 - [GPT-6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra)
@@ -127,7 +128,7 @@ harness. For each task record:
 
 Useful comparisons are:
 
-1. default GPT-6.1 Sol High root with the normal specialists;
+1. default GPT-6.2 Sol High root with the normal specialists;
 2. Luna Medium or High as the primary session root via the picker;
 3. root-only execution when the task is cohesive enough that delegation adds overhead.
 

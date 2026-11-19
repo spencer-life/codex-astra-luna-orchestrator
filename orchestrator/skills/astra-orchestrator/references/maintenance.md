@@ -45,8 +45,8 @@ Follow `PERSONAL.md` for deliberate reconciliation and rollback.
 
 ## Models and runtime compatibility
 
-The documented model/effort matrix was refreshed on 2026-10-26 to include GPT-6.1
-Terra `xhigh`, alongside GPT-6.1 Sol, GPT-6 Sol, and Luna. `orchestrator:validate` checks structure and that
+The documented model/effort matrix was updated on 2026-11-19 to include GPT-6.2
+Sol, alongside GPT-6.1 Sol, GPT-6.1 Terra `xhigh`, GPT-6 Sol, and Luna. `orchestrator:validate` checks structure and that
 dated matrix; it does not prove account availability. On Codex CLI 0.156.1,
 `codex debug models` emits the raw local catalog JSON accepted by the compatibility
 check. It is a debug subcommand,

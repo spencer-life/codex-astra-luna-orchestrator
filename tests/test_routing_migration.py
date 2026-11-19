@@ -112,7 +112,7 @@ keep = "unrelated"
     def assert_current_config(self):
         config = sync.read_installed_config(self.home / ".codex/config.toml")
         settings = sync.get_managed_settings(config)
-        self.assertEqual(settings["model"], "gpt-6.1-sol")
+        self.assertEqual(settings["model"], "gpt-6.2-sol")
         self.assertEqual(settings["model_reasoning_effort"], "high")
         self.assertTrue(settings["features"]["context_management"]["experimental_mode"])
         self.assertEqual(settings["agents"]["max_concurrent_threads_per_session"], 4)
@@ -392,7 +392,7 @@ class SourceValidationTests(unittest.TestCase):
             self.assertEqual((doc["model"], doc["model_reasoning_effort"]), pair)
 
         settings = sync.source_settings(source)
-        self.assertEqual((settings["model"], settings["model_reasoning_effort"]), ("gpt-6.1-sol", "high"))
+        self.assertEqual((settings["model"], settings["model_reasoning_effort"]), ("gpt-6.2-sol", "high"))
         self.assertTrue(settings["features"]["context_management"]["experimental_mode"])
         self.assertEqual(settings["agents"]["max_concurrent_threads_per_session"], 4)
         self.assertEqual(
@@ -405,7 +405,7 @@ class SourceValidationTests(unittest.TestCase):
 
     def test_delegation_guidance_matches_configured_roles(self):
         skill = (self.repo / sync.SKILL_PATH).read_text()
-        self.assertIn("root: active session; maintained default `gpt-6.1-sol` at `high`", skill)
+        self.assertIn("root: active session; maintained default `gpt-6.2-sol` at `high`", skill)
         self.assertIn("reviewer: `gpt-6.1-sol` at `high` reasoning", skill)
         self.assertIn("worker and tester: `gpt-6-luna` at `high` reasoning", skill)
         self.assertIn("ui_specialist: `gpt-6.1-terra` at `xhigh` reasoning", skill)
@@ -491,7 +491,7 @@ class SourceValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(sync.SyncError, "ui_specialist: gpt-6.1-terra/xhigh"):
             sync.run_compatibility(self.repo, path)
 
-        payload["models"] = [m for m in payload["models"] if m["slug"] != "gpt-6.1-sol"]
+        payload["models"] = [m for m in payload["models"] if m["slug"] != "gpt-6.2-sol"]
         path.write_text(json.dumps(payload))
         with self.assertRaisesRegex(sync.SyncError, "does not advertise"):
             sync.run_compatibility(self.repo, path)
